@@ -4,3 +4,4 @@ __pycache__/
 *.png
 output/
 .pytest_cache/
+experiments/*.csv
