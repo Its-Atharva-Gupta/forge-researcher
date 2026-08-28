@@ -6,6 +6,22 @@ Developed for the **WeMakeDevs Agent Harness Hackathon (TrueForge)** in partners
 
 ---
 
+## ⚡ 1-Command Setup (Zero Configuration)
+
+If TrueForge is running on your machine (`npx @truefoundry/trueforge` on `http://localhost:8790`), you can set up and register the entire agent with **just one command**:
+
+```bash
+./start.sh
+```
+
+**What `./start.sh` does automatically:**
+1. Sets up the Python environment using `uv`.
+2. Starts the **FastMCP Research Tool Gateway** (arXiv, Scholar, Kaggle, LaTeX compiler, and Rigor Fact-Checker).
+3. Connects to TrueForge's REST API, registers the tools, and creates the **`forge-researcher`** agent.
+4. Opens ready-to-use in TrueForge at `http://localhost:8790`!
+
+---
+
 ## 🌟 Guided Autonomy Architecture
 
 **ForgeResearcher** replaces rigid static templates with an **open-ended, contract-bounded research harness** powered by official skills from `orchestra-research/AI-research-SKILLs`:
@@ -48,7 +64,7 @@ flowchart TD
 | **`research-manager`** | `research_ideation` | `skills/research_ideation/` | Hypothesis brainstorming, feasibility scoring, and methodology formulation. |
 | **`eval-worker`** | `lm_evaluation_harness` | `skills/lm_evaluation_harness/` | Benchmarked metric evaluation contracts & sandbox testing. |
 | **`plot-worker`** | `academic_plotting` | `skills/academic_plotting/` | Publication-grade dual-axis figures (learning curves & comparison bar charts). |
-| **`write-worker`** | `ml_paper_writing` | `skills/ml_paper_writing/` | 2-column LaTeX conference manuscript synthesis (includes NeurIPS, ICLR, ICML templates). |
+| **`write-worker`** | `ml_paper_writing` | `skills/ml_paper_writing/` | 2-column LaTeX conference manuscript synthesis (NeurIPS, ICLR, ICML templates). |
 | **`rigor-worker`** | `rigor_reviewer` | `skills/rigor_reviewer/` | Level-2 scientific fact-checking & claim verification against empirical logs. |
 
 ---
@@ -63,34 +79,18 @@ flowchart TD
 | **`LaTeXCompilerServer`** | `mcp_servers/latex_compiler_mcp/server.py` | `render_latex_manuscript`: 2-column LaTeX compiler; `audit_scientific_claims`: Level-2 rigor auditor. |
 | **`ResearchLabServer`** | `mcp_servers/research_lab_mcp/server.py` | `profile_dataset`: Data summarizer; `generate_publication_plots`: Dual-axis plotting engine. |
 
-All servers are wired in `trueforge_config/mcp_settings.json`.
-
 ---
 
-## 🚀 Quick Start (Local Setup)
+## 🚀 Running Verification & Local Simulation
 
-### 1. Environment Setup
-```bash
-# Uses uv (fast Python package manager)
-uv venv .venv
-source .venv/bin/activate
-uv pip install -r <(echo "pytest mcp pandas matplotlib scikit-learn numpy")
-```
-
-### 2. Run Test Suite (8 Test Cases across all MCP Servers)
+### 1. Run Unit Tests (8 Passing Tests)
 ```bash
 .venv/bin/python -m pytest tests/
 ```
 
-### 3. Run End-to-End Simulation
+### 2. Run Local Multi-Agent Simulation
 ```bash
 PYTHONPATH=. .venv/bin/python run_end_to_end_simulation.py
-```
-
-### 4. Launch TrueForge Harness
-```bash
-npx @truefoundry/trueforge@latest
-# Open TrueForge dashboard on http://localhost:8790
 ```
 
 ---
@@ -108,37 +108,10 @@ In accordance with hackathon engineering best practices, every substantive featu
 - **[PR #4: Guided Autonomy Parent Manager and 4-Subagent Hierarchy](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/4)**
   - *Summary:* Full refactor to Guided Autonomy: Parent `research-manager`, contracted subagents, integrated arXiv tool, and Level-2 rigor auditor.
 - **[PR #5: Fix MCP Server based on Qodo Review Findings](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/5)**
-  - *Summary:* Resolved all issues surfaced by Qodo: upgraded arXiv API to HTTPS transport, enforced strict metric column validation in plotting to prevent blank images, and added LaTeX special character escaping.
+  - *Summary:* Resolved all issues surfaced by Qodo: upgraded arXiv API to HTTPS transport, enforced strict metric column validation in plotting, and added LaTeX character escaping.
 - **[PR #6: Add Dedicated Modular FastMCP Servers for arXiv, Scholar, Kaggle/Colab, and LaTeX](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/6)**
   - *Summary:* Decomposed research tooling into 5 dedicated FastMCP servers with 8 comprehensive unit tests.
 - **[PR #7: Integrate Official Orchestra Research AI-research-SKILLs Packages](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/7)**
-  - *Summary:* Integrated official skill packages (`autoresearch_manager`, `research_ideation`, `lm_evaluation_harness`, `academic_plotting`, `ml_paper_writing`, `rigor_reviewer`) directly into TrueForge agents.
-
----
-
-## 📁 Repository Structure
-
-```
-.
-├── mcp_servers/
-│   ├── arxiv_mcp/              # Dedicated arXiv API FastMCP server
-│   ├── scholar_mcp/            # Dedicated Google Scholar & Semantic Scholar FastMCP server
-│   ├── kaggle_colab_mcp/       # Dedicated Dataset Discovery & Compute Profiler FastMCP server
-│   ├── latex_compiler_mcp/     # Dedicated LaTeX Compiler & Level-2 Rigor FastMCP server
-│   └── research_lab_mcp/       # Dataset Profiling & Plotting FastMCP server
-├── skills/                     # Official Orchestra Research AI Skills
-│   ├── autoresearch_manager/   # Orchestration & two-loop continuous state management
-│   ├── research_ideation/      # Hypothesis brainstorming & novelty evaluation
-│   ├── lm_evaluation_harness/  # Empirical benchmark & metric contracts
-│   ├── academic_plotting/      # Publication data visualization & style guides
-│   ├── ml_paper_writing/       # LaTeX manuscript authoring & conference templates
-│   └── rigor_reviewer/         # Level-2 scientific fact-checking & audit dimensions
-├── trueforge_config/
-│   ├── agent.yaml              # TrueForge agent definition & approval gates
-│   └── mcp_settings.json       # MCP configuration wiring all 5 servers
-├── run_end_to_end_simulation.py # Full executable pipeline simulation script
-├── tests/                      # Automated verification test suite (8 tests)
-└── docs/
-    ├── REQUIREMENTS.md         # Hackathon requirements dossier
-    └── DEMO_SCRIPT.md          # 3-minute video presentation guide
-```
+  - *Summary:* Integrated official skill packages directly into TrueForge agents.
+- **[PR #8: 1-Command Auto-Registration Launcher for TrueForge](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/8)**
+  - *Summary:* Added `./start.sh`, `launch_mcp_streamable_gateway.py`, and `register_with_trueforge.py` for automated zero-config setup.
