@@ -28,16 +28,27 @@ import {
   Folder,
   Layers,
   Sparkles,
-  Bot
+  Bot,
+  Zap,
+  Sliders
 } from 'lucide-react';
 
 export default function App() {
-  const [liveArtifact, setLiveArtifact] = useState('subagents');
+  const [liveArtifact, setLiveArtifact] = useState('skills');
   const [workspaceFiles, setWorkspaceFiles] = useState([]);
+  const [skillsList, setSkillsList] = useState([]);
   const [papers, setPapers] = useState([]);
   const [subagentTasks, setSubagentTasks] = useState([]);
+  
+  // Workspace File Viewer state
   const [activeFile, setActiveFile] = useState(null);
   const [fileData, setFileData] = useState({ is_image: false, content: "" });
+  
+  // Skills Editor state (Isolated from workspace)
+  const [activeSkill, setActiveSkill] = useState(null);
+  const [skillContent, setSkillContent] = useState("");
+  const [isSkillSaved, setIsSkillSaved] = useState(false);
+
   const [kaggleData, setKaggleData] = useState({ active: false, log: "", message: "Awaiting first GPU experiment dispatch..." });
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -52,7 +63,17 @@ export default function App() {
 
   const fetchWorkspaceAndLiterature = async () => {
     setIsRefreshing(true);
-    // 1. Subagent Delegations & Prompts
+    
+    // 1. Skills List
+    try {
+      const skillRes = await fetch('http://localhost:8796/api/skills/list');
+      const skillData = await skillRes.json();
+      setSkillsList(skillData.skills || []);
+    } catch (e) {
+      setSkillsList([]);
+    }
+
+    // 2. Subagent Delegations
     try {
       const subRes = await fetch('http://localhost:8796/api/subagents/tasks');
       const subData = await subRes.json();
@@ -61,7 +82,7 @@ export default function App() {
       setSubagentTasks([]);
     }
 
-    // 2. Files
+    // 3. Workspace Files
     try {
       const res = await fetch('http://localhost:8796/api/workspace/files');
       const data = await res.json();
@@ -70,7 +91,7 @@ export default function App() {
       setWorkspaceFiles([]);
     }
 
-    // 3. Papers
+    // 4. Papers
     try {
       const paperRes = await fetch('http://localhost:8796/api/literature/papers');
       const paperData = await paperRes.json();
@@ -79,7 +100,7 @@ export default function App() {
       setPapers([]);
     }
 
-    // 4. Kaggle Logs
+    // 5. Kaggle Logs
     try {
       const logRes = await fetch('http://localhost:8796/api/kaggle/latest-logs');
       const logData = await logRes.json();
@@ -90,6 +111,40 @@ export default function App() {
     setIsRefreshing(false);
   };
 
+  // Open Skill Definition in Editor
+  const openSkillEditor = async (skill) => {
+    setActiveSkill(skill);
+    try {
+      const res = await fetch(`http://localhost:8796/api/skills/read?path=${encodeURIComponent(skill.path)}`);
+      const data = await res.json();
+      setSkillContent(data.content || "");
+    } catch (e) {
+      setSkillContent("Error loading skill file.");
+    }
+  };
+
+  const closeSkillEditor = () => {
+    setActiveSkill(null);
+    setSkillContent("");
+  };
+
+  const handleSaveSkill = async () => {
+    if (!activeSkill) return;
+    try {
+      await fetch('http://localhost:8796/api/skills/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: activeSkill.path, content: skillContent })
+      });
+      setIsSkillSaved(true);
+      setTimeout(() => setIsSkillSaved(false), 2000);
+      fetchWorkspaceAndLiterature();
+    } catch (e) {
+      alert("Error saving skill: " + e.message);
+    }
+  };
+
+  // Workspace file handlers
   const openFileViewer = async (filePath) => {
     setActiveFile(filePath);
     try {
@@ -240,15 +295,15 @@ export default function App() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '6px', backgroundColor: '#10121a', border: '1px solid rgba(255,255,255,0.06)', fontSize: '11px' }}>
-            <Layers style={{ height: '13px', width: '13px', color: '#a78bfa' }} />
-            <span style={{ color: '#94a3b8' }}>Subagents:</span>
-            <span style={{ color: '#a78bfa', fontFamily: 'monospace', fontWeight: '600' }}>{subagentTasks.length} Dispatched</span>
+            <Zap style={{ height: '13px', width: '13px', color: '#f59e0b' }} />
+            <span style={{ color: '#94a3b8' }}>Skills:</span>
+            <span style={{ color: '#fbbf24', fontFamily: 'monospace', fontWeight: '600' }}>{skillsList.length} Active</span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '6px', backgroundColor: '#10121a', border: '1px solid rgba(255,255,255,0.06)', fontSize: '11px' }}>
-            <BookOpen style={{ height: '13px', width: '13px', color: '#fbbf24' }} />
-            <span style={{ color: '#94a3b8' }}>Literature:</span>
-            <span style={{ color: '#fbbf24', fontFamily: 'monospace', fontWeight: '600' }}>{papers.length} Papers</span>
+            <Layers style={{ height: '13px', width: '13px', color: '#a78bfa' }} />
+            <span style={{ color: '#94a3b8' }}>Subagents:</span>
+            <span style={{ color: '#a78bfa', fontFamily: 'monospace', fontWeight: '600' }}>{subagentTasks.length} Run</span>
           </div>
 
           <a href="http://localhost:8790" target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: '#c4b5fd', padding: '4px 10px', borderRadius: '6px', backgroundColor: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.25)', textDecoration: 'none', fontWeight: '600' }}>
@@ -273,37 +328,44 @@ export default function App() {
         {/* 📊 Right Panel: Dedicated Studio Sidebar */}
         <aside style={{ width: '580px', borderLeft: '1px solid rgba(255,255,255,0.08)', backgroundColor: '#0b0d14', display: 'flex', flexDirection: 'column' }}>
           
-          {/* Main Tab Controls (Hidden when viewing a full file) */}
-          {!activeFile && (
+          {/* Main Tab Controls (Hidden when viewing a full file / skill) */}
+          {!activeFile && !activeSkill && (
             <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#080a10' }}>
-              <div style={{ display: 'flex', gap: '4px', backgroundColor: '#121520', padding: '3px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div style={{ display: 'flex', gap: '3px', backgroundColor: '#121520', padding: '3px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <button 
+                  onClick={() => setLiveArtifact('skills')} 
+                  style={{ padding: '5px 9px', borderRadius: '6px', border: 'none', backgroundColor: liveArtifact === 'skills' ? '#7c3aed' : 'transparent', color: liveArtifact === 'skills' ? '#fff' : '#94a3b8', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                >
+                  <Zap style={{ height: '12px', width: '12px' }} />
+                  <span>Skills ({skillsList.length})</span>
+                </button>
                 <button 
                   onClick={() => setLiveArtifact('subagents')} 
-                  style={{ padding: '5px 10px', borderRadius: '6px', border: 'none', backgroundColor: liveArtifact === 'subagents' ? '#7c3aed' : 'transparent', color: liveArtifact === 'subagents' ? '#fff' : '#94a3b8', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+                  style={{ padding: '5px 9px', borderRadius: '6px', border: 'none', backgroundColor: liveArtifact === 'subagents' ? '#7c3aed' : 'transparent', color: liveArtifact === 'subagents' ? '#fff' : '#94a3b8', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                 >
-                  <Bot style={{ height: '13px', width: '13px' }} />
+                  <Bot style={{ height: '12px', width: '12px' }} />
                   <span>Subagents ({subagentTasks.length})</span>
                 </button>
                 <button 
                   onClick={() => setLiveArtifact('workspace')} 
-                  style={{ padding: '5px 10px', borderRadius: '6px', border: 'none', backgroundColor: liveArtifact === 'workspace' ? '#7c3aed' : 'transparent', color: liveArtifact === 'workspace' ? '#fff' : '#94a3b8', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+                  style={{ padding: '5px 9px', borderRadius: '6px', border: 'none', backgroundColor: liveArtifact === 'workspace' ? '#7c3aed' : 'transparent', color: liveArtifact === 'workspace' ? '#fff' : '#94a3b8', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                 >
-                  <FolderTree style={{ height: '13px', width: '13px' }} />
+                  <FolderTree style={{ height: '12px', width: '12px' }} />
                   <span>Workspace ({workspaceFiles.length})</span>
                 </button>
                 <button 
                   onClick={() => setLiveArtifact('literature')} 
-                  style={{ padding: '5px 10px', borderRadius: '6px', border: 'none', backgroundColor: liveArtifact === 'literature' ? '#7c3aed' : 'transparent', color: liveArtifact === 'literature' ? '#fff' : '#94a3b8', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+                  style={{ padding: '5px 9px', borderRadius: '6px', border: 'none', backgroundColor: liveArtifact === 'literature' ? '#7c3aed' : 'transparent', color: liveArtifact === 'literature' ? '#fff' : '#94a3b8', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                 >
-                  <BookOpen style={{ height: '13px', width: '13px' }} />
+                  <BookOpen style={{ height: '12px', width: '12px' }} />
                   <span>Papers ({papers.length})</span>
                 </button>
                 <button 
                   onClick={() => setLiveArtifact('logs')} 
-                  style={{ padding: '5px 10px', borderRadius: '6px', border: 'none', backgroundColor: liveArtifact === 'logs' ? '#7c3aed' : 'transparent', color: liveArtifact === 'logs' ? '#fff' : '#94a3b8', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+                  style={{ padding: '5px 9px', borderRadius: '6px', border: 'none', backgroundColor: liveArtifact === 'logs' ? '#7c3aed' : 'transparent', color: liveArtifact === 'logs' ? '#fff' : '#94a3b8', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                 >
-                  <Terminal style={{ height: '13px', width: '13px' }} />
-                  <span>GPU Logs</span>
+                  <Terminal style={{ height: '12px', width: '12px' }} />
+                  <span>Logs</span>
                 </button>
               </div>
 
@@ -336,7 +398,7 @@ export default function App() {
             </div>
           )}
 
-          {/* Modal: Create File / Folder */}
+          {/* Modal: Create File / Folder (Workspace Only) */}
           {showCreateModal && (
             <div style={{ padding: '12px 16px', backgroundColor: '#131624', borderBottom: '1px solid rgba(124,58,237,0.3)', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span style={{ fontSize: '11px', fontWeight: '600', color: '#c4b5fd', whiteSpace: 'nowrap' }}>
@@ -361,7 +423,45 @@ export default function App() {
             </div>
           )}
 
-          {/* VIEW 1: Full-Screen Dedicated File Viewer / Live Editor (With Save & Back Button) */}
+          {/* VIEW 1: Dedicated Full-Sidebar SKILL.MD Editor (Isolated from Workspace) */}
+          {activeSkill && (
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#07080c' }}>
+              <div style={{ height: '44px', borderBottom: '1px solid rgba(255,255,255,0.06)', backgroundColor: '#0c0e18', padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <button 
+                  onClick={closeSkillEditor}
+                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#f1f5f9', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: '600', padding: '5px 10px', borderRadius: '6px' }}
+                >
+                  <ArrowLeft style={{ height: '13px', width: '13px' }} />
+                  <span>Back to Skills</span>
+                </button>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '11px', fontFamily: 'monospace', color: '#fbbf24', fontWeight: '600' }}>
+                    {activeSkill.path}
+                  </span>
+
+                  <button 
+                    onClick={handleSaveSkill} 
+                    style={{ background: '#161928', border: '1px solid rgba(251,191,36,0.4)', color: isSkillSaved ? '#34d399' : '#fbbf24', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', padding: '4px 8px', borderRadius: '4px', fontWeight: '600' }}
+                  >
+                    {isSkillSaved ? <Check style={{ height: '11px', width: '11px' }} /> : <Save style={{ height: '11px', width: '11px' }} />}
+                    <span>{isSkillSaved ? 'Saved & Hot-Reloaded' : 'Save Skill'}</span>
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ flex: 1, padding: '16px', overflowY: 'auto' }}>
+                <textarea
+                  value={skillContent}
+                  onChange={(e) => setSkillContent(e.target.value)}
+                  spellCheck="false"
+                  style={{ width: '100%', height: '100%', minHeight: '500px', backgroundColor: 'transparent', border: 'none', outline: 'none', resize: 'none', fontFamily: "'Fira Code', 'JetBrains Mono', monospace", fontSize: '11.5px', color: '#cbd5e1', lineHeight: '1.65' }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* VIEW 2: Dedicated Full-Sidebar WORKSPACE File Viewer / Editor */}
           {activeFile && (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#07080c' }}>
               <div style={{ height: '44px', borderBottom: '1px solid rgba(255,255,255,0.06)', backgroundColor: '#0c0e18', padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -424,8 +524,67 @@ export default function App() {
             </div>
           )}
 
-          {/* VIEW 2: Subagent Hierarchy & Live Task Prompts */}
-          {!activeFile && liveArtifact === 'subagents' && (
+          {/* VIEW 3: Dedicated Skills Explorer (Separate Tab) */}
+          {!activeFile && !activeSkill && liveArtifact === 'skills' && (
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <div>
+                  <h3 style={{ fontSize: '13px', fontWeight: '700', color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Zap style={{ height: '15px', width: '15px', color: '#fbbf24' }} />
+                    Agent Skills Registry (`skills/`)
+                  </h3>
+                  <p style={{ fontSize: '11px', color: '#64748b', margin: '2px 0 0 0' }}>Inspect and modify skill definitions (`SKILL.md`) as text</p>
+                </div>
+                <span style={{ fontSize: '11px', fontFamily: 'monospace', padding: '2px 8px', borderRadius: '4px', backgroundColor: 'rgba(251,191,36,0.12)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.2)' }}>
+                  {skillsList.length} Skills Configured
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto' }}>
+                {skillsList.map((skill, idx) => (
+                  <div 
+                    key={idx}
+                    onClick={() => openSkillEditor(skill)}
+                    style={{ 
+                      padding: '12px 14px', 
+                      borderRadius: '8px', 
+                      backgroundColor: '#10131d', 
+                      border: '1px solid rgba(255,255,255,0.06)', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between', 
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                      <div style={{ height: '28px', width: '28px', borderRadius: '6px', backgroundColor: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Zap style={{ height: '14px', width: '14px', color: '#fbbf24' }} />
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: '12px', fontFamily: 'monospace', fontWeight: '700', color: '#f1f5f9' }}>
+                          {skill.name}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {skill.description}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '9px', fontFamily: 'monospace', padding: '2px 6px', borderRadius: '4px', backgroundColor: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)', fontWeight: '700' }}>
+                        SKILL.MD
+                      </span>
+                      <ChevronRight style={{ height: '14px', width: '14px', color: '#475569' }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* VIEW 4: Subagents Tab */}
+          {!activeFile && !activeSkill && liveArtifact === 'subagents' && (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                 <div>
@@ -448,7 +607,7 @@ export default function App() {
                   <div>
                     <h4 style={{ fontSize: '13px', fontWeight: '700', color: '#f1f5f9', margin: '0 0 4px 0' }}>Awaiting Subagent Delegation</h4>
                     <p style={{ fontSize: '11px', color: '#64748b', lineHeight: '1.5', margin: 0, maxWidth: '300px' }}>
-                      When the parent research manager delegates tasks to <code>eval-worker</code>, <code>plot-worker</code>, <code>write-worker</code>, or <code>rigor-worker</code>, their assigned prompts and live statuses appear here!
+                      When the parent research manager delegates tasks to <code>eval-worker</code>, <code>plot-worker</code>, <code>write-worker</code>, or <code>rigor-worker</code>, their assigned prompts appear here!
                     </p>
                   </div>
                 </div>
@@ -456,8 +615,6 @@ export default function App() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto' }}>
                   {subagentTasks.map((task, idx) => (
                     <div key={idx} style={{ padding: '14px', borderRadius: '10px', backgroundColor: '#10131d', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      
-                      {/* Subagent Title Header */}
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <Bot style={{ height: '15px', width: '15px', color: '#a78bfa' }} />
@@ -472,7 +629,6 @@ export default function App() {
                         </span>
                       </div>
 
-                      {/* Prompt Dispatched By Parent */}
                       <div>
                         <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#94a3b8', marginBottom: '4px' }}>
                           Parent Prompt & Contract:
@@ -482,7 +638,6 @@ export default function App() {
                         </pre>
                       </div>
 
-                      {/* Output Summary */}
                       {task.result_summary && (
                         <div style={{ fontSize: '11px', color: '#94a3b8', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '6px', display: 'flex', justifyContent: 'space-between' }}>
                           <span>Result: {task.result_summary}</span>
@@ -496,8 +651,8 @@ export default function App() {
             </div>
           )}
 
-          {/* VIEW 3: Full Workspace Directory List */}
-          {!activeFile && liveArtifact === 'workspace' && (
+          {/* VIEW 5: Full Workspace Directory List */}
+          {!activeFile && !activeSkill && liveArtifact === 'workspace' && (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                 <div>
@@ -606,8 +761,8 @@ export default function App() {
             </div>
           )}
 
-          {/* VIEW 4: Researched Literature Feed */}
-          {!activeFile && liveArtifact === 'literature' && (
+          {/* VIEW 6: Papers Feed */}
+          {!activeFile && !activeSkill && liveArtifact === 'literature' && (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                 <div>
@@ -666,8 +821,8 @@ export default function App() {
             </div>
           )}
 
-          {/* VIEW 5: Kaggle GPU Telemetry Logs */}
-          {!activeFile && liveArtifact === 'logs' && (
+          {/* VIEW 7: Logs Tab */}
+          {!activeFile && !activeSkill && liveArtifact === 'logs' && (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#06080e' }}>
               <div style={{ height: '36px', padding: '0 14px', borderBottom: '1px solid rgba(255,255,255,0.05)', backgroundColor: '#0a0c13', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

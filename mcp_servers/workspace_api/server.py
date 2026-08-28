@@ -1,5 +1,5 @@
 """
-Workspace Explorer, File Manager, Subagent Telemetry, Literature Feed & GPU Telemetry API
+Workspace Explorer, Skills Manager, Subagent Telemetry, Literature Feed & GPU Telemetry API
 """
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,7 +23,10 @@ app.add_middleware(
 )
 
 WORKSPACE_DIR = os.path.abspath("workspace")
+SKILLS_DIR = os.path.abspath("skills")
 os.makedirs(WORKSPACE_DIR, exist_ok=True)
+os.makedirs(SKILLS_DIR, exist_ok=True)
+
 CACHE_FILE = "/tmp/kaggle_telemetry/latest_run.json"
 LITERATURE_FILE = "/tmp/forge_literature/papers.json"
 SUBAGENT_FILE = "/tmp/forge_telemetry/subagents.json"
@@ -45,6 +48,70 @@ class SaveFilePayload(BaseModel):
     path: str
     content: str
 
+# -------------------------------------------------------------
+# 🎯 SKILLS MANAGER API (Completely Separate from Workspace)
+# -------------------------------------------------------------
+@app.get("/api/skills/list")
+def list_skills():
+    """Lists all skills and their SKILL.md files from skills/."""
+    skills = []
+    if not os.path.exists(SKILLS_DIR):
+        return {"skills": []}
+
+    for item in os.listdir(SKILLS_DIR):
+        skill_path = os.path.join(SKILLS_DIR, item)
+        if os.path.isdir(skill_path):
+            doc_file = os.path.join(skill_path, "SKILL.md")
+            desc = "Autonomous research capability skill definition"
+            if os.path.exists(doc_file):
+                try:
+                    with open(doc_file, "r") as f:
+                        lines = f.readlines()
+                        for l in lines:
+                            if l.lower().startswith("description:"):
+                                desc = l.split(":", 1)[1].strip()
+                                break
+                except Exception:
+                    pass
+            skills.append({
+                "name": item,
+                "path": f"skills/{item}/SKILL.md",
+                "dir_path": f"skills/{item}",
+                "description": desc,
+                "has_skill_md": os.path.exists(doc_file)
+            })
+    return {"skills": skills, "total": len(skills)}
+
+@app.get("/api/skills/read")
+def read_skill_file(path: str):
+    """Reads the exact SKILL.md definition as editable text."""
+    safe_path = os.path.abspath(path)
+    if not safe_path.startswith(SKILLS_DIR) or not os.path.exists(safe_path):
+        raise HTTPException(status_code=404, detail="Skill file not found")
+    
+    try:
+        with open(safe_path, "r") as f:
+            return {"path": path, "content": f.read()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/skills/save")
+def save_skill_file(payload: SaveFilePayload):
+    """Saves changes to a skill definition (SKILL.md) to immediately update agent capabilities."""
+    safe_path = os.path.abspath(payload.path)
+    if not safe_path.startswith(SKILLS_DIR):
+        raise HTTPException(status_code=400, detail="Cannot save outside skills/ directory")
+    
+    try:
+        with open(safe_path, "w") as f:
+            f.write(payload.content)
+        return {"success": True, "path": payload.path}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# -------------------------------------------------------------
+# 🤖 SUBAGENTS API
+# -------------------------------------------------------------
 @app.get("/api/subagents/tasks")
 def list_subagent_tasks():
     """Lists all delegated subagent tasks, explicit prompts given by parent, and live status."""
@@ -57,6 +124,9 @@ def list_subagent_tasks():
             pass
     return {"tasks": [], "total": 0}
 
+# -------------------------------------------------------------
+# 📁 WORKSPACE API (CRUD)
+# -------------------------------------------------------------
 @app.get("/api/workspace/files")
 def list_workspace_files():
     """Lists all files and directories in workspace/."""
@@ -179,6 +249,9 @@ def delete_workspace_item(payload: DeleteItemPayload):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# -------------------------------------------------------------
+# 📖 LITERATURE & KAGGLE LOGS API
+# -------------------------------------------------------------
 @app.get("/api/literature/papers")
 def list_researched_papers():
     """Lists papers discovered via arXiv & Semantic Scholar."""
