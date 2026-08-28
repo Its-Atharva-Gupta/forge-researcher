@@ -5,13 +5,10 @@ from typing import Dict, Any, List, Optional
 import os
 import multiprocessing
 import webbrowser
-from fastmcp import FastMCP as MCPServer
+from fastmcp import FastMCP
 
-from kaggle.api.kaggle_api_extended import KaggleApi
+mcp = FastMCP("ColabKaggleServer")
 
-mcp = MCPServer("ColabKaggleServer")
-
-@mcp.tool()
 def open_google_colab_session(notebook_title: Optional[str] = "ForgeResearcher_Experiment") -> Dict[str, Any]:
     """
     Opens a live Google Colab browser session with GPU/TPU compute and connects to the Colab MCP bridge.
@@ -28,7 +25,6 @@ def open_google_colab_session(notebook_title: Optional[str] = "ForgeResearcher_E
     except Exception as e:
         return {"error": f"Failed to open browser for Colab: {str(e)}"}
 
-@mcp.tool()
 def inspect_colab_and_kaggle_compute() -> Dict[str, Any]:
     """
     Profiles remote compute capabilities across Google Colab (Free/Pro GPUs) and Kaggle (T4x2 / P100 / TPU v3-8).
@@ -52,4 +48,6 @@ def inspect_colab_and_kaggle_compute() -> Dict[str, Any]:
     }
 
 if __name__ == "__main__":
+    mcp.tool()(open_google_colab_session)
+    mcp.tool()(inspect_colab_and_kaggle_compute)
     mcp.run()
