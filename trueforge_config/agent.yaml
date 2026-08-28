@@ -1,0 +1,31 @@
+version: "1.0"
+agent:
+  name: "ForgeResearcher"
+  description: "Autonomous empirical ML researcher running sandboxed experiments and generating scientific papers."
+  model: "default"
+  
+  subagents:
+    - name: "LitReviewer"
+      role: "Scientific Literature Specialist"
+      skills: ["literature-review"]
+      mcp_servers: ["ResearchLabServer"]
+      
+    - name: "AutoExperimenter"
+      role: "Sandboxed ML Experiment Specialist"
+      skills: ["autoresearch-loop"]
+      mcp_servers: ["ResearchLabServer"]
+      approval_required: true
+      
+    - name: "PaperAuthor"
+      role: "Scientific LaTeX Author"
+      skills: ["latex-manuscript"]
+      mcp_servers: ["ResearchLabServer"]
+      approval_required: true
+
+  approval_gates:
+    - trigger: "before_compute_batch"
+      description: "Require human authorization before running multi-trial training loops in sandbox."
+    - trigger: "on_training_anomaly"
+      description: "Pause and request intervention if NaN loss or script crash is detected."
+    - trigger: "before_paper_publish"
+      description: "Require final review before compiling and finalizing research manuscript PDF."
