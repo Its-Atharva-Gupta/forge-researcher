@@ -6,12 +6,18 @@ import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 import json
-from fastmcp import FastMCP as MCPServer
+from fastmcp import FastMCP
 
-mcp = MCPServer("ArXivServer")
+mcp = FastMCP("ArXivServer")
 
-# Known high-relevance fallback literature catalog for ML/AI benchmarks
 FALLBACK_PAPERS = [
+    {
+        "title": "DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models",
+        "abstract": "We introduce Group Relative Policy Optimization (GRPO), an efficient reinforcement learning algorithm that omits the critic model and estimates the baseline from group scores.",
+        "published": "2024-02-05",
+        "url": "https://arxiv.org/abs/2402.03300",
+        "authors": ["Zhihong Shao", "Peiyi Wang", "Qihao Zhu", "Runxin Xu"]
+    },
     {
         "title": "Attention Is All You Need",
         "abstract": "The dominant sequence transduction models are based on complex recurrent or convolutional neural networks. We propose the Transformer, based solely on attention mechanisms.",
@@ -25,24 +31,9 @@ FALLBACK_PAPERS = [
         "published": "2022-07-08",
         "url": "https://arxiv.org/abs/2207.01848",
         "authors": ["Noah Hollmann", "Samuel Müller", "Katharina Eggensperger", "Frank Hutter"]
-    },
-    {
-        "title": "Why Do Tree-Based Models Still Outperform Deep Learning on Tabular Data?",
-        "abstract": "We empirically compare tree-based models and deep neural architectures across 45 tabular datasets, analyzing inductive biases and tabular data manifolds.",
-        "published": "2022-07-14",
-        "url": "https://arxiv.org/abs/2207.08815",
-        "authors": ["Leo Grinsztajn", "Edouard Oyallon", "Gael Varoquaux"]
-    },
-    {
-        "title": "XGBoost: A Scalable Tree Boosting System",
-        "abstract": "A scalable machine learning system for tree boosting that provides state-of-the-art results across diverse tabular benchmarks.",
-        "published": "2016-03-09",
-        "url": "https://arxiv.org/abs/1603.02754",
-        "authors": ["Tianqi Chen", "Carlos Guestrin"]
     }
 ]
 
-@mcp.tool()
 def search_arxiv(query: str, max_results: int = 5) -> Dict[str, Any]:
     """Search arXiv papers by query keyword with automatic mirror failover."""
     encoded = urllib.parse.quote(query)
@@ -77,7 +68,6 @@ def search_arxiv(query: str, max_results: int = 5) -> Dict[str, Any]:
         except Exception:
             continue
             
-    # If live API is rate-limited or timing out, return curated literature matching query tokens
     query_lower = query.lower()
     matched = [p for p in FALLBACK_PAPERS if any(term in p["title"].lower() or term in p["abstract"].lower() for term in query_lower.split())]
     if not matched:
@@ -89,6 +79,7 @@ def search_arxiv(query: str, max_results: int = 5) -> Dict[str, Any]:
         "papers": matched[:max_results],
         "source": "curated_academic_catalog (live arXiv rate-limited)"
     }
+
 
 if __name__ == "__main__":
     mcp.run()

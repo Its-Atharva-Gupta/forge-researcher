@@ -5,16 +5,14 @@ from typing import Dict, Any, List
 import urllib.parse
 import urllib.request
 import json
-from fastmcp import FastMCP as MCPServer
+from fastmcp import FastMCP
 
-mcp = MCPServer("ScholarServer")
+mcp = FastMCP("ScholarServer")
 
-@mcp.tool()
 def search_semantic_scholar(query: str, limit: int = 5) -> Dict[str, Any]:
     """Search academic literature on Semantic Scholar API and CrossRef with fallback."""
     encoded = urllib.parse.quote(query)
     
-    # 1. Try CrossRef API (open, highly reliable, not rate-limited like Semantic Scholar)
     try:
         crossref_url = f"https://api.crossref.org/works?query={encoded}&rows={limit}"
         req = urllib.request.Request(crossref_url, headers={'User-Agent': 'ForgeResearcher/1.0 (mailto:dev@forge.org)'})
@@ -40,7 +38,6 @@ def search_semantic_scholar(query: str, limit: int = 5) -> Dict[str, Any]:
     except Exception:
         pass
 
-    # 2. Semantic Scholar fallback
     try:
         url = f"https://api.semanticscholar.org/graph/v1/paper/search?query={encoded}&limit={limit}&fields=title,authors,year,citationCount,abstract,openAccessPdf"
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
@@ -57,7 +54,7 @@ def search_semantic_scholar(query: str, limit: int = 5) -> Dict[str, Any]:
                 "pdf_url": item.get("openAccessPdf", {}).get("url") if item.get("openAccessPdf") else None
             })
         return {"success": True, "count": len(papers), "papers": papers, "source": "semantic_scholar"}
-    except Exception as e:
+    except Exception:
         return {
             "success": True,
             "count": 1,
@@ -70,6 +67,7 @@ def search_semantic_scholar(query: str, limit: int = 5) -> Dict[str, Any]:
             }],
             "source": "fallback_catalog"
         }
+
 
 if __name__ == "__main__":
     mcp.run()
