@@ -135,3 +135,15 @@ Every feature, integration, and bug fix was developed through branch-based Pull 
 ```bash
 PYTHONPATH=. .venv/bin/python run_end_to_end_simulation.py
 ```
+
+---
+
+## 🎨 Best UI Track: ForgeResearcher Studio 2.0 (`http://localhost:5173`)
+
+ForgeResearcher comes with a dedicated **Modern Research Studio Web Application** designed for the **Best UI** track:
+
+### 🌟 Studio UI Features:
+1. **Live Hardware Telemetry Header:** Displays real-time status of Kaggle Tesla P100 / Dual-T4 GPU allocation, Hugging Face Hub connectivity, and Level-2 Rigor verification.
+2. **Multi-Subagent Visual Roster:** Interactive sidebar tracking all 5 active agent roles (`research-manager`, `eval-worker`, `plot-worker`, `write-worker`, `rigor-worker`).
+3. **Research Lifecycle Stepper:** Visual step-by-step progress tracking the 6 stages of empirical exploration and Approval Gates.
+4. **Dedicated Artifact Studio Panel:** Side-by-side split screen rendering generated dual-axis convergence plots, raw `results.tsv` tables, compiled LaTeX paper previews, and Level-2 scientific fact-check audit reports in real time!

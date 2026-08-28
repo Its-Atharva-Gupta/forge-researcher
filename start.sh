@@ -8,7 +8,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$DIR"
 
 echo "=================================================================="
-echo "🔬 Welcome to ForgeResearcher (TrueForge Research Agent Harness)"
+echo "🔬 Welcome to ForgeResearcher Studio (Best UI & Guided Autonomy)"
 echo "=================================================================="
 
 # Step 1: Ensure uv is installed
@@ -20,7 +20,7 @@ fi
 
 # Step 2: Set up virtual environment
 if [ ! -d ".venv" ]; then
-    echo "⚙️  [1/4] Setting up Python virtual environment with uv..."
+    echo "⚙️  [1/5] Setting up Python virtual environment with uv..."
     uv venv .venv
     source .venv/bin/activate
     uv pip install pytest fastmcp uvicorn starlette pandas matplotlib scikit-learn numpy kaggle huggingface_hub datasets
@@ -29,7 +29,7 @@ else
 fi
 
 # Step 3: Check for Kaggle Credentials
-echo "🔑 [2/4] Checking Kaggle Authentication..."
+echo "🔑 [2/5] Checking Kaggle Authentication..."
 if [ -f "$HOME/.kaggle/kaggle.json" ] || [ -n "$KAGGLE_KEY" ]; then
     echo "  ✓ Kaggle credentials found (Cloud GPU acceleration active)."
 else
@@ -40,7 +40,7 @@ else
 fi
 
 # Step 4: Ensure TrueForge is running
-echo "🌐 [3/4] Checking TrueForge runtime on port 8790..."
+echo "🌐 [3/5] Checking TrueForge runtime on port 8790..."
 if ! curl -s http://localhost:8790/api/v1/settings/mcp-servers > /dev/null 2>&1; then
     echo "  🚀 Starting TrueForge runtime (npx @truefoundry/trueforge)..."
     nohup npx @truefoundry/trueforge > /tmp/trueforge.log 2>&1 &
@@ -58,19 +58,27 @@ else
 fi
 
 # Step 5: Start FastMCP Gateway
-echo "⚡ [4/4] Starting FastMCP Research Tool Gateway on port 8795..."
+echo "⚡ [4/5] Starting FastMCP Research Tool Gateway on port 8795..."
 fuser -k 8795/tcp > /dev/null 2>&1 || true
 sleep 1
 nohup "$DIR/.venv/bin/python" "$DIR/run_mcp_gateway.py" > /tmp/mcp_gateway.log 2>&1 &
 MCP_PID=$!
 sleep 2
 
-# Step 6: Auto-register Agent and Tools
+# Register Agent & MCP Servers in TrueForge
 "$DIR/.venv/bin/python" "$DIR/register_with_trueforge.py"
+
+# Step 6: Launch ForgeResearcher Modern Research Studio UI on Port 5173
+echo "🎨 [5/5] Launching ForgeResearcher Studio Modern Web UI on port 5173..."
+fuser -k 5173/tcp > /dev/null 2>&1 || true
+cd "$DIR/frontend"
+nohup "$DIR/frontend/node_modules/.bin/vite" --port 5173 --host 0.0.0.0 > /tmp/frontend_dev.log 2>&1 &
+cd "$DIR"
 
 echo ""
 echo "=================================================================="
-echo "🚀 FORGERESEARCHER IS RUNNING AND READY!"
-echo "👉 Open your browser to: http://localhost:8790"
-echo "👉 Select 'forge-researcher' and start your research inquiry!"
+echo "🎉 FORGERESEARCHER STUDIO IS FULLY LIVE & OPERATIONAL!"
+echo "=================================================================="
+echo "👉 🌟 Modern Custom Research Studio UI: http://localhost:5173"
+echo "👉 ⚡ TrueForge Core Engine:             http://localhost:8790"
 echo "=================================================================="
