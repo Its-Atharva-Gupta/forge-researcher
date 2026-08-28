@@ -1,6 +1,6 @@
 # ForgeResearcher 🔬⚡
 
-> **Autonomous Empirical ML Research Harness built on TrueForge with Guided Autonomy, Sandboxed Execution, Multi-Subagent Routing, FastMCP Server Ecosystem (Kaggle Cloud GPU Dispatcher, Hugging Face Hub, arXiv HTTPS, Scholar/CrossRef, LaTeX Compiler, Level-2 Rigor Auditor), Official Orchestra Research Skills, and Qodo Code Review.**
+> **Autonomous Empirical ML Research Harness built on TrueForge with Guided Autonomy, Sandboxed Execution, Multi-Subagent Routing, FastMCP Tool Ecosystem (Kaggle Cloud Dual-T4 GPU/TPU Dispatcher, Hugging Face Hub, arXiv HTTPS, Scholar/CrossRef, LaTeX Compiler, Level-2 Rigor Auditor), Official Orchestra Research Skills, and Qodo Code Review.**
 
 Developed for the **WeMakeDevs Agent Harness Hackathon (TrueForge)** in partnership with **TrueFoundry** & **Qodo**.
 
@@ -8,17 +8,29 @@ Developed for the **WeMakeDevs Agent Harness Hackathon (TrueForge)** in partners
 
 ## ⚡ 1-Command Setup (Zero Configuration)
 
-If TrueForge is running on your machine (`npx @truefoundry/trueforge` on `http://localhost:8790`), you can set up, configure, and register the entire agent with **just one command**:
+When you clone the repository, **you only need to run a single command**:
 
 ```bash
 ./start.sh
 ```
 
-**What `./start.sh` does automatically:**
-1. Sets up the Python environment using `uv`.
-2. Starts the **FastMCP Research Tool Gateway** (Kaggle Cloud GPU Dispatcher, Hugging Face Hub, arXiv, CrossRef/Scholar, LaTeX compiler, and Rigor Fact-Checker).
-3. Connects to TrueForge's REST API, registers the tools, and creates the **`forge-researcher`** agent.
-4. Opens ready-to-use in TrueForge at `http://localhost:8790`!
+### What `./start.sh` does automatically:
+1. **Installs & provisions `uv`** and Python dependencies.
+2. **Checks Kaggle Authentication** (guides you if not configured, or automatically attaches your `~/.kaggle/kaggle.json` or `KAGGLE_KEY`).
+3. **Automatically downloads and starts TrueForge** (`npx @truefoundry/trueforge`) if it's not already running.
+4. **Starts the FastMCP Research Tool Gateway** (Kaggle Cloud GPU Dispatcher, Hugging Face Hub, arXiv, CrossRef/Scholar, Dual-Axis Plotter, LaTeX compiler, and Level-2 Rigor Fact-Checker).
+5. **Registers all tools and the `forge-researcher` agent** via TrueForge's REST API.
+6. Gives you a direct link to **`http://localhost:8790`**!
+
+---
+
+## 🔑 Authentication Guide
+
+| Service | Is Auth Required? | How to Set Up (Takes 30 seconds) |
+| :--- | :---: | :--- |
+| **Kaggle Cloud GPU** | Optional (Local sandbox fallback enabled) | 1. Go to [kaggle.com/settings](https://www.kaggle.com/settings) $\to$ click **Create New Token**.<br>2. Place the file at `~/.kaggle/kaggle.json` (or `export KAGGLE_KEY=...`). |
+| **Hugging Face Hub** | No (Public API) | Works out of the box for searching models, datasets, and spaces. |
+| **arXiv & Scholar** | No (Public API) | Works out of the box with multi-mirror failover and CrossRef indexing. |
 
 ---
 
@@ -71,11 +83,10 @@ flowchart TD
 
 ## 🔌 Dedicated FastMCP Server Ecosystem
 
-| FastMCP Server / Toolset | Tools Provided | Description |
+| FastMCP Toolset | Tools Provided | Description |
 | :--- | :--- | :--- |
-| **`Kaggle GPU Dispatcher`** | `run_experiment_on_kaggle_gpu`, `get_kaggle_experiment_logs` | Dispatches training scripts with `enable_gpu: true` to remote Kaggle NVIDIA T4 Dual-GPU / TPU cloud compute. |
-| **`Hugging Face Hub`** | `search_huggingface_models`, `search_huggingface_datasets`, `search_huggingface_spaces` | Discovers pretrained models, tokenizers, checkpoints, and benchmark datasets on Hugging Face. |
-| **`Google Colab MCP`** | `open_google_colab_session`, `inspect_colab_and_kaggle_compute` | Integrates official `googlecolab/colab-mcp` browser session bridge for interactive GPU/TPU notebook execution. |
+| **`Kaggle GPU Dispatcher`** | `run_experiment_on_kaggle_gpu`, `get_kaggle_experiment_logs`, `search_kaggle_datasets` | Dispatches training scripts with `enable_gpu: true` to remote Kaggle NVIDIA T4 Dual-GPU / TPU cloud compute. |
+| **`Hugging Face Hub`** | `search_huggingface_models`, `search_huggingface_datasets`, `search_huggingface_spaces` | Discovers pretrained models, tokenizers, checkpoints, and benchmark datasets on Hugging Face Hub. |
 | **`ArXiv MCP`** | `search_arxiv` | Queries the official arXiv API over HTTPS for recent papers, abstracts, and authors with multi-mirror failover. |
 | **`Scholar / CrossRef`** | `search_semantic_scholar` | Queries CrossRef Academic Index and Semantic Scholar for citation graphs and literature surveys. |
 | **`LaTeX Compiler & Rigor`** | `render_latex_manuscript`, `audit_scientific_claims` | Compiles 2-column conference papers and executes Level-2 empirical fact-checking against raw results. |
@@ -85,7 +96,7 @@ flowchart TD
 
 ## 🔍 Qodo Code Review Trail (All PRs Merged to `master`)
 
-Every feature and fix was developed through branch-based Pull Requests reviewed by **Qodo**:
+Every feature, integration, and bug fix was developed through branch-based Pull Requests reviewed by **Qodo**:
 
 - **[PR #1: FastMCP Research Lab Server](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/1)**
 - **[PR #2: Baseline AutoResearch Sandbox Environment](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/2)**
@@ -108,10 +119,12 @@ Every feature and fix was developed through branch-based Pull Requests reviewed 
 - **[PR #19: Embed Explicit 4-Subagent Guided Autonomy Roster into TrueForge Prompt](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/19)**
 - **[PR #20: Hugging Face Hub MCP Tools (Models, Datasets, Spaces)](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/20)**
 - **[PR #21: Direct Kaggle Cloud Dual-T4 GPU/TPU Experiment Execution](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/21)**
+- **[PR #22: Finalize README and Zero-Config Launcher](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/22)**
+- **[PR #23: Clean MCP Toolsets & Intelligent Self-Starting Launcher](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/23)**
 
 ---
 
-## 🚀 Running Verification & Simulation
+## 🚀 Verification & Testing
 
 ### 1. Run Unit Tests (8 Passing Tests)
 ```bash
