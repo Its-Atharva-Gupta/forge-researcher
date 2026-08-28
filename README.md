@@ -1,6 +1,6 @@
 # ForgeResearcher 🔬⚡
 
-> **Autonomous Empirical ML Research Harness built on TrueForge with Guided Autonomy, Sandboxed Execution, Multi-Subagent Routing, 5 Dedicated MCP Servers, and Qodo Code Review.**
+> **Autonomous Empirical ML Research Harness built on TrueForge with Guided Autonomy, Sandboxed Execution, Multi-Subagent Routing, 5 Dedicated MCP Servers, Official Orchestra Research Skills, and Qodo Code Review.**
 
 Developed for the **WeMakeDevs Agent Harness Hackathon (TrueForge)** in partnership with **TrueFoundry** & **Qodo**.
 
@@ -8,7 +8,7 @@ Developed for the **WeMakeDevs Agent Harness Hackathon (TrueForge)** in partners
 
 ## 🌟 Guided Autonomy Architecture
 
-**ForgeResearcher** replaces rigid static templates with an **open-ended, contract-bounded research harness**:
+**ForgeResearcher** replaces rigid static templates with an **open-ended, contract-bounded research harness** powered by official skills from `orchestra-research/AI-research-SKILLs`:
 
 ```mermaid
 flowchart TD
@@ -40,6 +40,19 @@ flowchart TD
 
 ---
 
+## 🧠 Official Orchestra Research Skills Integrated
+
+| Agent / Subagent | Official Skill Imported | Skill Path | Purpose |
+| :--- | :--- | :--- | :--- |
+| **`research-manager`** | `autoresearch_manager` | `skills/autoresearch_manager/` | High-level research orchestration, continuous state tracking, and subagent routing. |
+| **`research-manager`** | `research_ideation` | `skills/research_ideation/` | Hypothesis brainstorming, feasibility scoring, and methodology formulation. |
+| **`eval-worker`** | `lm_evaluation_harness` | `skills/lm_evaluation_harness/` | Benchmarked metric evaluation contracts & sandbox testing. |
+| **`plot-worker`** | `academic_plotting` | `skills/academic_plotting/` | Publication-grade dual-axis figures (learning curves & comparison bar charts). |
+| **`write-worker`** | `ml_paper_writing` | `skills/ml_paper_writing/` | 2-column LaTeX conference manuscript synthesis (includes NeurIPS, ICLR, ICML templates). |
+| **`rigor-worker`** | `rigor_reviewer` | `skills/rigor_reviewer/` | Level-2 scientific fact-checking & claim verification against empirical logs. |
+
+---
+
 ## 🔌 5 Dedicated FastMCP Servers
 
 | FastMCP Server | Path | Tools Provided |
@@ -54,18 +67,6 @@ All servers are wired in `trueforge_config/mcp_settings.json`.
 
 ---
 
-## 🛡️ Subagents & Responsibilities
-
-| Subagent | Role | Input Contract | Output Contract |
-| :--- | :--- | :--- | :--- |
-| **`research-manager`** (Parent) | Orchestrator & Approval Owner | User's open research objective | Orchestrates subagents, manages human approval gates, verifies output. |
-| **`eval-worker`** | ML Code Writer & Sandbox Runner | Hypothesis specification & dataset target | Generates dynamic training script in `workspace/`, runs in TrueForge sandbox, outputs `results.tsv`. |
-| **`plot-worker`** | Publication Visualizer | `results.tsv` | Generates 2 publication-ready charts (e.g. learning curve & metric comparison bar chart) in `workspace/figures/`. |
-| **`write-worker`** | Academic LaTeX Author | Research plan + `results.tsv` + figures | Produces 2-column LaTeX manuscript (`workspace/paper.tex`). |
-| **`rigor-worker`** | Scientific Auditor | `paper.tex` + `results.tsv` | Audits manuscript claims against empirical metrics to ensure zero hallucinations; outputs `rigor_audit.json`. |
-
----
-
 ## 🚀 Quick Start (Local Setup)
 
 ### 1. Environment Setup
@@ -76,7 +77,7 @@ source .venv/bin/activate
 uv pip install -r <(echo "pytest mcp pandas matplotlib scikit-learn numpy")
 ```
 
-### 2. Run Test Suite (8 Test Cases across 5 MCP Servers)
+### 2. Run Test Suite (8 Test Cases across all MCP Servers)
 ```bash
 .venv/bin/python -m pytest tests/
 ```
@@ -105,11 +106,13 @@ In accordance with hackathon engineering best practices, every substantive featu
 - **[PR #3: TrueForge Agent Skills, Subagent Hierarchy, and Approval Gates](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/3)**
   - *Summary:* Configured subagent hierarchy and defined approval gates in `trueforge_config/agent.yaml`.
 - **[PR #4: Guided Autonomy Parent Manager and 4-Subagent Hierarchy](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/4)**
-  - *Summary:* Full refactor to Guided Autonomy: Parent `research-manager`, contracted subagents (`eval-worker`, `plot-worker`, `write-worker`, `rigor-worker`), integrated arXiv tool, and Level-2 rigor auditor.
+  - *Summary:* Full refactor to Guided Autonomy: Parent `research-manager`, contracted subagents, integrated arXiv tool, and Level-2 rigor auditor.
 - **[PR #5: Fix MCP Server based on Qodo Review Findings](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/5)**
-  - *Summary:* Fixed all issues surfaced by Qodo: upgraded arXiv API to HTTPS transport, enforced strict metric column validation in plotting to prevent blank images, and added LaTeX special character escaping.
+  - *Summary:* Resolved all issues surfaced by Qodo: upgraded arXiv API to HTTPS transport, enforced strict metric column validation in plotting to prevent blank images, and added LaTeX special character escaping.
 - **[PR #6: Add Dedicated Modular FastMCP Servers for arXiv, Scholar, Kaggle/Colab, and LaTeX](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/6)**
   - *Summary:* Decomposed research tooling into 5 dedicated FastMCP servers with 8 comprehensive unit tests.
+- **[PR #7: Integrate Official Orchestra Research AI-research-SKILLs Packages](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/7)**
+  - *Summary:* Integrated official skill packages (`autoresearch_manager`, `research_ideation`, `lm_evaluation_harness`, `academic_plotting`, `ml_paper_writing`, `rigor_reviewer`) directly into TrueForge agents.
 
 ---
 
@@ -119,21 +122,17 @@ In accordance with hackathon engineering best practices, every substantive featu
 .
 ├── mcp_servers/
 │   ├── arxiv_mcp/              # Dedicated arXiv API FastMCP server
-│   │   └── server.py
 │   ├── scholar_mcp/            # Dedicated Google Scholar & Semantic Scholar FastMCP server
-│   │   └── server.py
 │   ├── kaggle_colab_mcp/       # Dedicated Dataset Discovery & Compute Profiler FastMCP server
-│   │   └── server.py
 │   ├── latex_compiler_mcp/     # Dedicated LaTeX Compiler & Level-2 Rigor FastMCP server
-│   │   └── server.py
 │   └── research_lab_mcp/       # Dataset Profiling & Plotting FastMCP server
-│       └── server.py
-├── skills/                     # Modular Skill Definitions
-│   ├── research_manager/       # Parent orchestrator & approval logic
-│   ├── eval_worker/            # Sandboxed ML execution & metric contract
-│   ├── plot_worker/            # Publication visualizer
-│   ├── write_worker/           # Academic LaTeX drafting
-│   └── rigor_worker/           # Level-2 Fact-check & claim verification
+├── skills/                     # Official Orchestra Research AI Skills
+│   ├── autoresearch_manager/   # Orchestration & two-loop continuous state management
+│   ├── research_ideation/      # Hypothesis brainstorming & novelty evaluation
+│   ├── lm_evaluation_harness/  # Empirical benchmark & metric contracts
+│   ├── academic_plotting/      # Publication data visualization & style guides
+│   ├── ml_paper_writing/       # LaTeX manuscript authoring & conference templates
+│   └── rigor_reviewer/         # Level-2 scientific fact-checking & audit dimensions
 ├── trueforge_config/
 │   ├── agent.yaml              # TrueForge agent definition & approval gates
 │   └── mcp_settings.json       # MCP configuration wiring all 5 servers
