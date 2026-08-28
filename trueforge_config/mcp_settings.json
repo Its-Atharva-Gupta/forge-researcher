@@ -1,0 +1,29 @@
+{
+  "mcpServers": {
+    "ArXivServer": {
+      "command": ".venv/bin/python",
+      "args": ["mcp_servers/arxiv_mcp/server.py"],
+      "env": {}
+    },
+    "ScholarServer": {
+      "command": ".venv/bin/python",
+      "args": ["mcp_servers/scholar_mcp/server.py"],
+      "env": {}
+    },
+    "KaggleColabServer": {
+      "command": ".venv/bin/python",
+      "args": ["mcp_servers/kaggle_colab_mcp/server.py"],
+      "env": {}
+    },
+    "LaTeXCompilerServer": {
+      "command": ".venv/bin/python",
+      "args": ["mcp_servers/latex_compiler_mcp/server.py"],
+      "env": {}
+    },
+    "ResearchLabServer": {
+      "command": ".venv/bin/python",
+      "args": ["mcp_servers/research_lab_mcp/server.py"],
+      "env": {}
+    }
+  }
+}
