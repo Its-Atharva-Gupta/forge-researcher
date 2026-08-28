@@ -1,22 +1,30 @@
 """
 Unified FastMCP SSE Gateway for ForgeResearcher
-Serves all tools over persistent SSE:
-- arXiv & Google Scholar literature search
-- Dataset profiling & Kaggle/OpenML discovery
-- Publication plotting
-- LaTeX paper compilation
-- Level-2 Scientific Rigor Fact-Checker
+Serves dedicated research tools over persistent SSE:
+- search_kaggle_datasets (Kaggle API + open scientific benchmarks)
+- search_arxiv_papers (arXiv API over HTTPS + fallbacks)
+- search_academic_citations (CrossRef + Semantic Scholar)
+- inspect_compute_environment (CPU/RAM/storage profiling)
+- analyze_dataset_profile (CSV/TSV stats)
+- generate_academic_figures (Loss curves & bar charts)
+- compile_latex_paper (2-column LaTeX manuscript)
+- verify_scientific_claims_audit (Level-2 Fact-Checker)
 """
 from typing import Dict, Any, List
 from mcp.server.mcpserver import MCPServer
 
 from mcp_servers.arxiv_mcp.server import search_arxiv
 from mcp_servers.scholar_mcp.server import search_semantic_scholar
-from mcp_servers.kaggle_colab_mcp.server import search_open_datasets, inspect_compute_environment
+from mcp_servers.kaggle_colab_mcp.server import search_kaggle_datasets, inspect_compute_environment
 from mcp_servers.latex_compiler_mcp.server import render_latex_manuscript, audit_scientific_claims
 from mcp_servers.research_lab_mcp.server import profile_dataset, generate_publication_plots
 
 mcp = MCPServer("forge-researcher-tools")
+
+@mcp.tool()
+def search_kaggle_datasets(query: str, max_results: int = 5) -> Dict[str, Any]:
+    """Search Kaggle, competition benchmarks, and open scientific datasets."""
+    return search_kaggle_datasets(query, max_results)
 
 @mcp.tool()
 def search_arxiv_papers(query: str, max_results: int = 5) -> Dict[str, Any]:
@@ -27,11 +35,6 @@ def search_arxiv_papers(query: str, max_results: int = 5) -> Dict[str, Any]:
 def search_academic_citations(query: str, limit: int = 5) -> Dict[str, Any]:
     """Search academic literature and citations via CrossRef and Semantic Scholar."""
     return search_semantic_scholar(query, limit)
-
-@mcp.tool()
-def discover_open_datasets(query: str, limit: int = 5) -> Dict[str, Any]:
-    """Discover scientific datasets from OpenML, Kaggle mirrors, and built-in ML benchmarks."""
-    return search_open_datasets(query, limit)
 
 @mcp.tool()
 def inspect_compute_environment() -> Dict[str, Any]:

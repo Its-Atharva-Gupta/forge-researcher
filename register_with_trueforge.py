@@ -1,11 +1,5 @@
 """
-Auto-Register ForgeResearcher with Direct MCP Server Names
-Registers each MCP server under its intuitive individual name:
-- `kaggle-mcp` (with `search_kaggle_and_open_datasets` and `inspect_compute_environment`)
-- `arxiv-mcp` (with `search_arxiv_papers`)
-- `scholar-mcp` (with `search_academic_citations`)
-- `research-lab-mcp` (with `analyze_dataset_profile` and `generate_academic_figures`)
-- `latex-mcp` (with `compile_latex_paper` and `verify_scientific_claims_audit`)
+Auto-Register ForgeResearcher with Explicit Tools & Instruction Clarity
 """
 import os
 import json
@@ -31,41 +25,21 @@ def make_request(endpoint, method="GET", data=None):
 
 def setup():
     print("=" * 60)
-    print("⚡ CONFIGURING TRUEFORGE WITH NAMED MCP SERVERS (INCLUDING KAGGLE-MCP)")
+    print("⚡ UPDATING TRUEFORGE AGENT FOR FORGERESEARCHER")
     print("=" * 60)
 
-    # 1. Connect
-    mcp_check = make_request("/settings/mcp-servers")
-    if "error" in mcp_check:
-        print(f"  ❌ Cannot connect to TrueForge: {mcp_check['error']}")
-        return False
-
-    # 2. Register named MCP servers pointing to the SSE gateway
-    servers = [
-        {"name": "kaggle-mcp", "desc": "Kaggle, OpenML & scientific benchmark dataset search and compute tools"},
-        {"name": "arxiv-mcp", "desc": "arXiv literature search tool over HTTPS"},
-        {"name": "scholar-mcp", "desc": "Google Scholar and CrossRef academic citation search"},
-        {"name": "research-lab-mcp", "desc": "Dataset statistical profiling and dual-axis publication plotting"},
-        {"name": "latex-mcp", "desc": "LaTeX conference paper compiler and Level-2 rigor auditor"},
-        {"name": "forge-researcher-tools", "desc": "Unified research tools suite"}
-    ]
-
-    for s in servers:
-        mcp_payload = {
-            "manifest": {
-                "type": "remote",
-                "name": s["name"],
-                "url": "http://127.0.0.1:8795/sse",
-                "description": s["desc"]
-            }
+    # 1. Register server
+    mcp_payload = {
+        "manifest": {
+            "type": "remote",
+            "name": "forge-researcher-tools",
+            "url": "http://127.0.0.1:8795/sse",
+            "description": "Unified research tools: Kaggle search, arXiv papers, Scholar citations, Plotting, LaTeX compiler, and Level-2 rigor auditor."
         }
-        res = make_request("/settings/mcp-servers", method="PUT", data=mcp_payload)
-        if "error" in res:
-            print(f"  ❌ Error registering {s['name']}: {res['error']}")
-        else:
-            print(f"  ✓ Registered MCP server: {s['name']}")
+    }
+    make_request("/settings/mcp-servers", method="PUT", data=mcp_payload)
 
-    # 3. Detect Model
+    # 2. Detect Model
     providers_res = make_request("/settings/model-providers")
     model_name = "deepseek/deepseek"
     if "data" in providers_res and len(providers_res["data"]) > 0:
@@ -75,7 +49,7 @@ def setup():
         if models:
             model_name = f"{prov_name}/{models[0].get('name')}"
 
-    print(f"\nRegistering 'forge-researcher' Agent with all named MCP servers...")
+    print(f"\nRegistering 'forge-researcher' Agent...")
     
     agent_payload = {
         "name": "forge-researcher",
@@ -85,23 +59,22 @@ def setup():
                 "params": {"reasoning_effort": "minimal"}
             },
             "instructions": (
-                "You are 'forge-researcher', an autonomous empirical ML research assistant with direct tool integrations.\n\n"
-                "YOUR ATTACHED TOOLS & SERVERS:\n"
-                "- `kaggle-mcp` (or `forge-researcher-tools`): Tools `discover_open_datasets` (searches Kaggle/OpenML/benchmarks) and `inspect_compute_environment`.\n"
-                "- `arxiv-mcp`: Tool `search_arxiv_papers` (searches arXiv literature over HTTPS).\n"
-                "- `scholar-mcp`: Tool `search_academic_citations` (searches Google Scholar and CrossRef).\n"
-                "- `research-lab-mcp`: Tools `analyze_dataset_profile` and `generate_academic_figures`.\n"
-                "- `latex-mcp`: Tools `compile_latex_paper` and `verify_scientific_claims_audit`.\n\n"
-                "WHEN ASKED ABOUT KAGGLE, PAPERS, OR DATASETS:\n"
-                "- ALWAYS directly call `discover_open_datasets` or `search_arxiv_papers`.\n"
-                "- Do NOT attempt to list 'deferred-tools' because all your tools are already directly attached and ready to invoke."
+                "You are 'forge-researcher', an autonomous empirical ML research assistant.\n\n"
+                "YOUR ATTACHED RESEARCH TOOLS:\n"
+                "- `search_kaggle_datasets`: Call this when asked about Kaggle, competitions, or datasets.\n"
+                "- `search_arxiv_papers`: Call this when searching for academic papers on arXiv.\n"
+                "- `search_academic_citations`: Call this for Google Scholar / CrossRef citations.\n"
+                "- `inspect_compute_environment`: Call this to inspect CPU/RAM and compute boundaries.\n"
+                "- `analyze_dataset_profile`: Call this to profile dataset statistics and shapes.\n"
+                "- `generate_academic_figures`: Call this to plot loss curves and bar charts.\n"
+                "- `compile_latex_paper`: Call this to draft 2-column LaTeX conference papers.\n"
+                "- `verify_scientific_claims_audit`: Call this to perform Level-2 fact-checking.\n\n"
+                "BEHAVIOR RULES:\n"
+                "1. When the user asks about Kaggle or datasets, immediately call `search_kaggle_datasets(query=...)`.\n"
+                "2. When the user asks about papers, immediately call `search_arxiv_papers(query=...)`.\n"
+                "3. When executing research, formulate 3 trials, ASK FOR APPROVAL before sandbox execution, run trials, plot charts, and compile the final paper."
             ),
             "mcp_servers": [
-                {"name": "kaggle-mcp", "enable_tools": ["@all"], "preload": True},
-                {"name": "arxiv-mcp", "enable_tools": ["@all"], "preload": True},
-                {"name": "scholar-mcp", "enable_tools": ["@all"], "preload": True},
-                {"name": "research-lab-mcp", "enable_tools": ["@all"], "preload": True},
-                {"name": "latex-mcp", "enable_tools": ["@all"], "preload": True},
                 {"name": "forge-researcher-tools", "enable_tools": ["@all"], "preload": True}
             ],
             "config": {
@@ -134,10 +107,10 @@ def setup():
     if "error" in agent_res:
         print(f"  ❌ Error creating agent: {agent_res['error']}")
     else:
-        print("  ✓ Created agent 'forge-researcher' with direct named MCP servers!")
+        print("  ✓ Created agent 'forge-researcher' with explicit search_kaggle_datasets tool!")
 
     print("\n" + "=" * 60)
-    print("🎉 ALL NAMED MCP SERVERS (INCLUDING KAGGLE-MCP) ARE LIVE!")
+    print("🎉 ALL TOOLS ARE ONLINE!")
     print("=" * 60)
 
 if __name__ == "__main__":
