@@ -25,13 +25,17 @@ import {
   Trash2,
   Edit2,
   Save,
-  Folder
+  Folder,
+  Layers,
+  Sparkles,
+  Bot
 } from 'lucide-react';
 
 export default function App() {
-  const [liveArtifact, setLiveArtifact] = useState('literature');
+  const [liveArtifact, setLiveArtifact] = useState('subagents');
   const [workspaceFiles, setWorkspaceFiles] = useState([]);
   const [papers, setPapers] = useState([]);
+  const [subagentTasks, setSubagentTasks] = useState([]);
   const [activeFile, setActiveFile] = useState(null);
   const [fileData, setFileData] = useState({ is_image: false, content: "" });
   const [kaggleData, setKaggleData] = useState({ active: false, log: "", message: "Awaiting first GPU experiment dispatch..." });
@@ -48,6 +52,16 @@ export default function App() {
 
   const fetchWorkspaceAndLiterature = async () => {
     setIsRefreshing(true);
+    // 1. Subagent Delegations & Prompts
+    try {
+      const subRes = await fetch('http://localhost:8796/api/subagents/tasks');
+      const subData = await subRes.json();
+      setSubagentTasks(subData.tasks || []);
+    } catch (e) {
+      setSubagentTasks([]);
+    }
+
+    // 2. Files
     try {
       const res = await fetch('http://localhost:8796/api/workspace/files');
       const data = await res.json();
@@ -56,6 +70,7 @@ export default function App() {
       setWorkspaceFiles([]);
     }
 
+    // 3. Papers
     try {
       const paperRes = await fetch('http://localhost:8796/api/literature/papers');
       const paperData = await paperRes.json();
@@ -64,6 +79,7 @@ export default function App() {
       setPapers([]);
     }
 
+    // 4. Kaggle Logs
     try {
       const logRes = await fetch('http://localhost:8796/api/kaggle/latest-logs');
       const logData = await logRes.json();
@@ -224,9 +240,9 @@ export default function App() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '6px', backgroundColor: '#10121a', border: '1px solid rgba(255,255,255,0.06)', fontSize: '11px' }}>
-            <Database style={{ height: '13px', width: '13px', color: '#60a5fa' }} />
-            <span style={{ color: '#94a3b8' }}>Hugging Face:</span>
-            <span style={{ color: '#60a5fa', fontFamily: 'monospace', fontWeight: '600' }}>Connected</span>
+            <Layers style={{ height: '13px', width: '13px', color: '#a78bfa' }} />
+            <span style={{ color: '#94a3b8' }}>Subagents:</span>
+            <span style={{ color: '#a78bfa', fontFamily: 'monospace', fontWeight: '600' }}>{subagentTasks.length} Dispatched</span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '6px', backgroundColor: '#10121a', border: '1px solid rgba(255,255,255,0.06)', fontSize: '11px' }}>
@@ -255,29 +271,36 @@ export default function App() {
         </main>
 
         {/* 📊 Right Panel: Dedicated Studio Sidebar */}
-        <aside style={{ width: '560px', borderLeft: '1px solid rgba(255,255,255,0.08)', backgroundColor: '#0b0d14', display: 'flex', flexDirection: 'column' }}>
+        <aside style={{ width: '580px', borderLeft: '1px solid rgba(255,255,255,0.08)', backgroundColor: '#0b0d14', display: 'flex', flexDirection: 'column' }}>
           
           {/* Main Tab Controls (Hidden when viewing a full file) */}
           {!activeFile && (
             <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#080a10' }}>
-              <div style={{ display: 'flex', gap: '6px', backgroundColor: '#121520', padding: '3px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div style={{ display: 'flex', gap: '4px', backgroundColor: '#121520', padding: '3px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
                 <button 
-                  onClick={() => setLiveArtifact('literature')} 
-                  style={{ padding: '5px 12px', borderRadius: '6px', border: 'none', backgroundColor: liveArtifact === 'literature' ? '#7c3aed' : 'transparent', color: liveArtifact === 'literature' ? '#fff' : '#94a3b8', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  onClick={() => setLiveArtifact('subagents')} 
+                  style={{ padding: '5px 10px', borderRadius: '6px', border: 'none', backgroundColor: liveArtifact === 'subagents' ? '#7c3aed' : 'transparent', color: liveArtifact === 'subagents' ? '#fff' : '#94a3b8', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
                 >
-                  <BookOpen style={{ height: '13px', width: '13px' }} />
-                  <span>Literature ({papers.length})</span>
+                  <Bot style={{ height: '13px', width: '13px' }} />
+                  <span>Subagents ({subagentTasks.length})</span>
                 </button>
                 <button 
                   onClick={() => setLiveArtifact('workspace')} 
-                  style={{ padding: '5px 12px', borderRadius: '6px', border: 'none', backgroundColor: liveArtifact === 'workspace' ? '#7c3aed' : 'transparent', color: liveArtifact === 'workspace' ? '#fff' : '#94a3b8', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  style={{ padding: '5px 10px', borderRadius: '6px', border: 'none', backgroundColor: liveArtifact === 'workspace' ? '#7c3aed' : 'transparent', color: liveArtifact === 'workspace' ? '#fff' : '#94a3b8', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
                 >
                   <FolderTree style={{ height: '13px', width: '13px' }} />
                   <span>Workspace ({workspaceFiles.length})</span>
                 </button>
                 <button 
+                  onClick={() => setLiveArtifact('literature')} 
+                  style={{ padding: '5px 10px', borderRadius: '6px', border: 'none', backgroundColor: liveArtifact === 'literature' ? '#7c3aed' : 'transparent', color: liveArtifact === 'literature' ? '#fff' : '#94a3b8', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+                >
+                  <BookOpen style={{ height: '13px', width: '13px' }} />
+                  <span>Papers ({papers.length})</span>
+                </button>
+                <button 
                   onClick={() => setLiveArtifact('logs')} 
-                  style={{ padding: '5px 12px', borderRadius: '6px', border: 'none', backgroundColor: liveArtifact === 'logs' ? '#7c3aed' : 'transparent', color: liveArtifact === 'logs' ? '#fff' : '#94a3b8', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  style={{ padding: '5px 10px', borderRadius: '6px', border: 'none', backgroundColor: liveArtifact === 'logs' ? '#7c3aed' : 'transparent', color: liveArtifact === 'logs' ? '#fff' : '#94a3b8', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
                 >
                   <Terminal style={{ height: '13px', width: '13px' }} />
                   <span>GPU Logs</span>
@@ -341,8 +364,6 @@ export default function App() {
           {/* VIEW 1: Full-Screen Dedicated File Viewer / Live Editor (With Save & Back Button) */}
           {activeFile && (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#07080c' }}>
-              
-              {/* Back Button & Action Navigation Header */}
               <div style={{ height: '44px', borderBottom: '1px solid rgba(255,255,255,0.06)', backgroundColor: '#0c0e18', padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <button 
                   onClick={closeFileViewer}
@@ -379,7 +400,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Full-Height Content / Editor Canvas */}
               <div style={{ flex: 1, padding: '16px', overflowY: 'auto' }}>
                 {fileData.is_image ? (
                   <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', backgroundColor: '#090b12', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.04)' }}>
@@ -404,7 +424,79 @@ export default function App() {
             </div>
           )}
 
-          {/* VIEW 2: Full Workspace Directory List with Rename & Delete */}
+          {/* VIEW 2: Subagent Hierarchy & Live Task Prompts */}
+          {!activeFile && liveArtifact === 'subagents' && (
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <div>
+                  <h3 style={{ fontSize: '13px', fontWeight: '700', color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Layers style={{ height: '15px', width: '15px', color: '#a78bfa' }} />
+                    Subagent Delegations & Prompts
+                  </h3>
+                  <p style={{ fontSize: '11px', color: '#64748b', margin: '2px 0 0 0' }}>Live contract-bounded worker hierarchy & dispatched instructions</p>
+                </div>
+                <span style={{ fontSize: '11px', fontFamily: 'monospace', padding: '2px 8px', borderRadius: '4px', backgroundColor: 'rgba(124,58,237,0.12)', color: '#c4b5fd', border: '1px solid rgba(124,58,237,0.2)' }}>
+                  {subagentTasks.length} Active Workers
+                </span>
+              </div>
+
+              {subagentTasks.length === 0 ? (
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px', textAlign: 'center', gap: '12px' }}>
+                  <div style={{ height: '48px', width: '48px', borderRadius: '12px', backgroundColor: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Bot style={{ height: '22px', width: '22px', color: '#a78bfa' }} />
+                  </div>
+                  <div>
+                    <h4 style={{ fontSize: '13px', fontWeight: '700', color: '#f1f5f9', margin: '0 0 4px 0' }}>Awaiting Subagent Delegation</h4>
+                    <p style={{ fontSize: '11px', color: '#64748b', lineHeight: '1.5', margin: 0, maxWidth: '300px' }}>
+                      When the parent research manager delegates tasks to <code>eval-worker</code>, <code>plot-worker</code>, <code>write-worker</code>, or <code>rigor-worker</code>, their assigned prompts and live statuses appear here!
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto' }}>
+                  {subagentTasks.map((task, idx) => (
+                    <div key={idx} style={{ padding: '14px', borderRadius: '10px', backgroundColor: '#10131d', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      
+                      {/* Subagent Title Header */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Bot style={{ height: '15px', width: '15px', color: '#a78bfa' }} />
+                          <span style={{ fontSize: '12px', fontFamily: 'monospace', fontWeight: '700', color: '#fff' }}>
+                            {task.worker_name}
+                          </span>
+                          <span style={{ fontSize: '10px', color: '#64748b' }}>({task.role})</span>
+                        </div>
+
+                        <span style={{ fontSize: '9px', fontFamily: 'monospace', padding: '2px 6px', borderRadius: '4px', backgroundColor: task.status === 'COMPLETED' ? '#065f4625' : '#7c3aed20', color: task.status === 'COMPLETED' ? '#34d399' : '#c4b5fd', border: `1px solid ${task.status === 'COMPLETED' ? '#05966940' : '#7c3aed40'}`, fontWeight: '700' }}>
+                          {task.status}
+                        </span>
+                      </div>
+
+                      {/* Prompt Dispatched By Parent */}
+                      <div>
+                        <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#94a3b8', marginBottom: '4px' }}>
+                          Parent Prompt & Contract:
+                        </div>
+                        <pre style={{ margin: 0, padding: '8px 10px', borderRadius: '6px', backgroundColor: '#080a10', border: '1px solid rgba(255,255,255,0.04)', fontSize: '11px', fontFamily: "'Fira Code', monospace", color: '#cbd5e1', lineHeight: '1.5', whiteSpace: 'pre-wrap', maxHeight: '140px', overflowY: 'auto' }}>
+                          {task.task_prompt}
+                        </pre>
+                      </div>
+
+                      {/* Output Summary */}
+                      {task.result_summary && (
+                        <div style={{ fontSize: '11px', color: '#94a3b8', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '6px', display: 'flex', justifyContent: 'space-between' }}>
+                          <span>Result: {task.result_summary}</span>
+                          <span style={{ fontSize: '10px', fontFamily: 'monospace', color: '#64748b' }}>{task.updated_at || task.timestamp}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* VIEW 3: Full Workspace Directory List */}
           {!activeFile && liveArtifact === 'workspace' && (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
@@ -483,7 +575,6 @@ export default function App() {
                               {badge.label}
                             </span>
 
-                            {/* Rename Button */}
                             <button 
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -496,7 +587,6 @@ export default function App() {
                               <Edit2 style={{ height: '12px', width: '12px' }} />
                             </button>
 
-                            {/* Delete Button */}
                             <button 
                               onClick={(e) => handleDeleteItem(e, file.path)}
                               title="Delete"
@@ -516,7 +606,7 @@ export default function App() {
             </div>
           )}
 
-          {/* VIEW 3: Researched Literature Feed */}
+          {/* VIEW 4: Researched Literature Feed */}
           {!activeFile && liveArtifact === 'literature' && (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
@@ -530,67 +620,53 @@ export default function App() {
               </div>
 
               <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {papers.length === 0 ? (
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px', textAlign: 'center', gap: '12px' }}>
-                    <div style={{ height: '48px', width: '48px', borderRadius: '12px', backgroundColor: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <BookOpen style={{ height: '22px', width: '22px', color: '#fbbf24' }} />
+                {papers.map((paper, idx) => (
+                  <div key={idx} style={{ padding: '14px 16px', borderRadius: '10px', backgroundColor: '#10131d', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+                      <h4 style={{ fontSize: '13px', fontWeight: '700', color: '#f8fafc', lineHeight: '1.4', margin: 0 }}>
+                        {paper.title}
+                      </h4>
+                      <span style={{ fontSize: '9px', fontFamily: 'monospace', padding: '2px 6px', borderRadius: '4px', backgroundColor: 'rgba(251,191,36,0.12)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.25)', whiteSpace: 'nowrap', fontWeight: '600' }}>
+                        {paper.source}
+                      </span>
                     </div>
-                    <div>
-                      <h4 style={{ fontSize: '13px', fontWeight: '700', color: '#f1f5f9', margin: '0 0 4px 0' }}>No literature queried yet</h4>
-                      <p style={{ fontSize: '11px', color: '#64748b', lineHeight: '1.5', margin: 0, maxWidth: '280px' }}>
-                        When your agent searches for papers using <code>search_arxiv</code> or <code>search_semantic_scholar</code>, they will appear here with title, authors, abstract, and PDF links!
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  papers.map((paper, idx) => (
-                    <div key={idx} style={{ padding: '14px 16px', borderRadius: '10px', backgroundColor: '#10131d', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-                        <h4 style={{ fontSize: '13px', fontWeight: '700', color: '#f8fafc', lineHeight: '1.4', margin: 0 }}>
-                          {paper.title}
-                        </h4>
-                        <span style={{ fontSize: '9px', fontFamily: 'monospace', padding: '2px 6px', borderRadius: '4px', backgroundColor: 'rgba(251,191,36,0.12)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.25)', whiteSpace: 'nowrap', fontWeight: '600' }}>
-                          {paper.source}
-                        </span>
-                      </div>
 
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', fontSize: '11px', color: '#94a3b8' }}>
-                        {paper.authors && paper.authors.length > 0 && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                            <UserCheck style={{ height: '13px', width: '13px', color: '#a78bfa' }} />
-                            <span>{paper.authors.slice(0, 3).join(', ')}{paper.authors.length > 3 ? ' et al.' : ''}</span>
-                          </div>
-                        )}
-                        {paper.published && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                            <Calendar style={{ height: '13px', width: '13px', color: '#60a5fa' }} />
-                            <span>{paper.published.split('T')[0]}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {paper.summary && (
-                        <p style={{ fontSize: '11.5px', color: '#cbd5e1', lineHeight: '1.6', margin: 0, backgroundColor: '#090b12', padding: '10px 12px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                          {paper.summary}
-                        </p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', fontSize: '11px', color: '#94a3b8' }}>
+                      {paper.authors && paper.authors.length > 0 && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <UserCheck style={{ height: '13px', width: '13px', color: '#a78bfa' }} />
+                          <span>{paper.authors.slice(0, 3).join(', ')}{paper.authors.length > 3 ? ' et al.' : ''}</span>
+                        </div>
                       )}
-
-                      {paper.url && (
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '2px' }}>
-                          <a href={paper.url} target="_blank" rel="noreferrer" style={{ fontSize: '11px', fontWeight: '600', color: '#a78bfa', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 8px', borderRadius: '4px', backgroundColor: 'rgba(124,58,237,0.1)' }}>
-                            <span>Read Manuscript / PDF</span>
-                            <ExternalLink style={{ height: '11px', width: '11px' }} />
-                          </a>
+                      {paper.published && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <Calendar style={{ height: '13px', width: '13px', color: '#60a5fa' }} />
+                          <span>{paper.published.split('T')[0]}</span>
                         </div>
                       )}
                     </div>
-                  ))
-                )}
+
+                    {paper.summary && (
+                      <p style={{ fontSize: '11.5px', color: '#cbd5e1', lineHeight: '1.6', margin: 0, backgroundColor: '#090b12', padding: '10px 12px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                        {paper.summary}
+                      </p>
+                    )}
+
+                    {paper.url && (
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '2px' }}>
+                        <a href={paper.url} target="_blank" rel="noreferrer" style={{ fontSize: '11px', fontWeight: '600', color: '#a78bfa', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 8px', borderRadius: '4px', backgroundColor: 'rgba(124,58,237,0.1)' }}>
+                          <span>Read Manuscript / PDF</span>
+                          <ExternalLink style={{ height: '11px', width: '11px' }} />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           )}
 
-          {/* VIEW 4: Kaggle GPU Telemetry Logs */}
+          {/* VIEW 5: Kaggle GPU Telemetry Logs */}
           {!activeFile && liveArtifact === 'logs' && (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#06080e' }}>
               <div style={{ height: '36px', padding: '0 14px', borderBottom: '1px solid rgba(255,255,255,0.05)', backgroundColor: '#0a0c13', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

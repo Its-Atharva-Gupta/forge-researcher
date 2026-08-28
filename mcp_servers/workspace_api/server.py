@@ -1,6 +1,5 @@
 """
-Workspace Explorer, File Manager, Literature Feed & Telemetry API for ForgeResearcher Studio UI
-Supports Full CRUD: List, Create File/Folder, Rename, Delete, Edit/Save, and Base64 Images.
+Workspace Explorer, File Manager, Subagent Telemetry, Literature Feed & GPU Telemetry API
 """
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,7 +12,7 @@ import uvicorn
 from typing import Optional
 from kaggle.api.kaggle_api_extended import KaggleApi
 
-app = FastAPI(title="ForgeResearcher Workspace & Literature API")
+app = FastAPI(title="ForgeResearcher Studio API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -27,6 +26,7 @@ WORKSPACE_DIR = os.path.abspath("workspace")
 os.makedirs(WORKSPACE_DIR, exist_ok=True)
 CACHE_FILE = "/tmp/kaggle_telemetry/latest_run.json"
 LITERATURE_FILE = "/tmp/forge_literature/papers.json"
+SUBAGENT_FILE = "/tmp/forge_telemetry/subagents.json"
 
 class CreateItemPayload(BaseModel):
     name: str
@@ -45,6 +45,18 @@ class SaveFilePayload(BaseModel):
     path: str
     content: str
 
+@app.get("/api/subagents/tasks")
+def list_subagent_tasks():
+    """Lists all delegated subagent tasks, explicit prompts given by parent, and live status."""
+    if os.path.exists(SUBAGENT_FILE):
+        try:
+            with open(SUBAGENT_FILE, "r") as f:
+                tasks = json.load(f)
+            return {"tasks": tasks, "total": len(tasks)}
+        except Exception:
+            pass
+    return {"tasks": [], "total": 0}
+
 @app.get("/api/workspace/files")
 def list_workspace_files():
     """Lists all files and directories in workspace/."""
@@ -53,7 +65,6 @@ def list_workspace_files():
     
     file_list = []
     for root, dirs, files in os.walk(WORKSPACE_DIR):
-        # Include directories
         for d in dirs:
             full_path = os.path.join(root, d)
             rel_path = os.path.relpath(full_path, start=".")
@@ -65,8 +76,6 @@ def list_workspace_files():
                 "is_image": False,
                 "modified": os.path.getmtime(full_path)
             })
-        
-        # Include files
         for f in files:
             full_path = os.path.join(root, f)
             rel_path = os.path.relpath(full_path, start=".")
@@ -81,7 +90,6 @@ def list_workspace_files():
                 "modified": os.path.getmtime(full_path)
             })
             
-    # Sort folders first, then files alphabetically
     file_list.sort(key=lambda x: (not x.get("is_dir", False), x["name"].lower()))
     return {"files": file_list, "total": len(file_list)}
 
@@ -120,7 +128,6 @@ def create_workspace_item(payload: CreateItemPayload):
     """Creates a new file or folder in workspace/."""
     target_dir = os.path.join(WORKSPACE_DIR, payload.parent_path) if payload.parent_path else WORKSPACE_DIR
     target_path = os.path.join(target_dir, payload.name)
-    
     try:
         if payload.is_folder:
             os.makedirs(target_path, exist_ok=True)
@@ -150,7 +157,6 @@ def rename_workspace_item(payload: RenameItemPayload):
     old_full = os.path.abspath(payload.old_path)
     if not os.path.exists(old_full):
         raise HTTPException(status_code=404, detail="Item not found")
-    
     new_full = os.path.join(os.path.dirname(old_full), payload.new_name)
     try:
         os.rename(old_full, new_full)
@@ -164,7 +170,6 @@ def delete_workspace_item(payload: DeleteItemPayload):
     target_path = os.path.abspath(payload.path)
     if not os.path.exists(target_path):
         raise HTTPException(status_code=404, detail="Item not found")
-    
     try:
         if os.path.isdir(target_path):
             shutil.rmtree(target_path)
@@ -176,7 +181,7 @@ def delete_workspace_item(payload: DeleteItemPayload):
 
 @app.get("/api/literature/papers")
 def list_researched_papers():
-    """Lists papers and citations discovered via arXiv & Semantic Scholar."""
+    """Lists papers discovered via arXiv & Semantic Scholar."""
     if os.path.exists(LITERATURE_FILE):
         try:
             with open(LITERATURE_FILE, "r") as f:
