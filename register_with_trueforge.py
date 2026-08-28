@@ -1,8 +1,5 @@
 """
-Auto-Register ForgeResearcher with Official Kaggle MCP Endpoint & Research Tools
-Registers:
-1. `kaggle` (Official Remote MCP endpoint: https://www.kaggle.com/mcp)
-2. `forge-researcher-tools` (Local FastMCP SSE suite for arXiv, LaTeX, plotting, and rigor audit)
+Auto-Register ForgeResearcher with Authenticated Kaggle MCP Server & Research Suite
 """
 import os
 import json
@@ -10,6 +7,9 @@ import urllib.request
 import urllib.error
 
 TRUEFORGE_API = "http://localhost:8790/api/v1"
+
+KAGGLE_TOKEN = os.environ.get("KAGGLE_KEY", "KGAT_e248157027a0f42dd30f6976a1a0d2c2")
+KAGGLE_USER = os.environ.get("KAGGLE_USERNAME", "atharvagupta123")
 
 def make_request(endpoint, method="GET", data=None):
     url = f"{TRUEFORGE_API}{endpoint}"
@@ -28,7 +28,7 @@ def make_request(endpoint, method="GET", data=None):
 
 def setup():
     print("=" * 60)
-    print("⚡ CONNECTING OFFICIAL KAGGLE MCP SERVER & RESEARCH TOOLKIT")
+    print("⚡ CONFIGURING TRUEFORGE WITH AUTHENTICATED KAGGLE & RESEARCH SUITE")
     print("=" * 60)
 
     # 1. Connect
@@ -37,23 +37,29 @@ def setup():
         print(f"  ❌ Cannot connect to TrueForge: {mcp_check['error']}")
         return False
 
-    # 2. Register Official Remote Kaggle MCP Server (https://www.kaggle.com/mcp)
-    print("\n[1/3] Registering official remote Kaggle MCP server (https://www.kaggle.com/mcp)...")
+    # 2. Register Authenticated Remote Kaggle MCP Server (https://www.kaggle.com/mcp)
+    print(f"\n[1/3] Registering authenticated Kaggle MCP server (User: {KAGGLE_USER})...")
     kaggle_payload = {
         "manifest": {
             "type": "remote",
             "name": "kaggle",
             "url": "https://www.kaggle.com/mcp",
-            "description": "Official Kaggle MCP Server: Search & download datasets, run & manage notebooks/kernels, enter competitions, and create model benchmarks."
+            "description": "Official Kaggle MCP Server: Search/download datasets, run/manage notebooks & GPU kernels, competitions, and models.",
+            "auth": {
+                "type": "header",
+                "headers": {
+                    "Authorization": f"Bearer {KAGGLE_TOKEN}"
+                }
+            }
         }
     }
     k_res = make_request("/settings/mcp-servers", method="PUT", data=kaggle_payload)
     if "error" in k_res:
-        print(f"  ⚠️  Kaggle remote register response: {k_res['error']}")
+        print(f"  ⚠️  Kaggle remote registration: {k_res['error']}")
     else:
-        print("  ✓ Registered official 'kaggle' MCP server (https://www.kaggle.com/mcp)!")
+        print(f"  ✓ Registered authenticated 'kaggle' MCP server!")
 
-    # 3. Register local Research Tools (arXiv, plotting, LaTeX, rigor audit)
+    # 3. Register local Research Tools
     print("\n[2/3] Registering 'forge-researcher-tools' in TrueForge...")
     tools_payload = {
         "manifest": {
@@ -79,7 +85,7 @@ def setup():
         if models:
             model_name = f"{prov_name}/{models[0].get('name')}"
 
-    print(f"\n[3/3] Registering 'forge-researcher' Agent with official Kaggle & Research tools...")
+    print(f"\n[3/3] Registering 'forge-researcher' Agent with authenticated Kaggle...")
     
     agent_payload = {
         "name": "forge-researcher",
@@ -89,11 +95,12 @@ def setup():
                 "params": {"reasoning_effort": "minimal"}
             },
             "instructions": (
-                "You are 'forge-researcher', an autonomous empirical ML research assistant.\n\n"
+                "You are 'forge-researcher', an autonomous empirical ML research assistant with full Kaggle and literature search integrations.\n\n"
+                f"AUTHENTICATED USER: {KAGGLE_USER}\n\n"
                 "YOUR ATTACHED CAPABILITIES:\n"
-                "1. `kaggle` MCP Server (https://www.kaggle.com/mcp):\n"
-                "   - Notebooks: Start, manage, and retrieve outputs for Kaggle Notebooks & GPU/TPU compute.\n"
-                "   - Datasets: Search, list files, and inspect metadata.\n"
+                "1. `kaggle` MCP Server (Authenticated via Kaggle Bearer Token):\n"
+                "   - Notebooks: List, start, manage, and retrieve outputs for your Kaggle Notebooks & GPU compute.\n"
+                "   - Datasets: Search, list files, and inspect dataset metadata.\n"
                 "   - Competitions: Search competitions, download files, and submit solutions.\n"
                 "   - Models & Benchmarking: Manage Kaggle models and benchmarks.\n\n"
                 "2. `forge-researcher-tools` MCP Server:\n"
@@ -106,7 +113,7 @@ def setup():
                 "   - `verify_scientific_claims_audit`: Perform Level-2 empirical fact-checking."
             ),
             "mcp_servers": [
-                {"name": "kaggle", "enable_tools": ["@all"], "preload": False},
+                {"name": "kaggle", "enable_tools": ["@all"], "preload": True},
                 {"name": "forge-researcher-tools", "enable_tools": ["@all"], "preload": True}
             ],
             "config": {
@@ -139,10 +146,10 @@ def setup():
     if "error" in agent_res:
         print(f"  ❌ Error creating agent: {agent_res['error']}")
     else:
-        print("  ✓ Created agent 'forge-researcher' with official Kaggle MCP integration!")
+        print("  ✓ Created agent 'forge-researcher' with authenticated Kaggle access!")
 
     print("\n" + "=" * 60)
-    print("🎉 OFFICIAL KAGGLE MCP SERVER & RESEARCH TOOLKIT ARE READY!")
+    print("🎉 KAGGLE AUTHENTICATION & RESEARCH TOOLKIT ARE READY!")
     print("=" * 60)
 
 if __name__ == "__main__":
