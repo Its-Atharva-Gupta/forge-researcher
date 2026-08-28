@@ -1,6 +1,5 @@
 """
-Workspace Explorer, Skills Manager, TrueForge Chat Bridge & Telemetry API
-Provides clean REST endpoints to create sessions with 'forge-researcher', send prompts, and stream responses.
+Workspace Explorer, Skills Manager, Subagent Telemetry, Literature Feed & GPU Telemetry API
 """
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,13 +8,11 @@ import os
 import shutil
 import json
 import base64
-import urllib.request
-import urllib.parse
 import uvicorn
-from typing import Optional, List, Dict, Any
+from typing import Optional
 from kaggle.api.kaggle_api_extended import KaggleApi
 
-app = FastAPI(title="ForgeResearcher Studio & Chat API")
+app = FastAPI(title="ForgeResearcher Studio API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -33,11 +30,6 @@ os.makedirs(SKILLS_DIR, exist_ok=True)
 CACHE_FILE = "/tmp/kaggle_telemetry/latest_run.json"
 LITERATURE_FILE = "/tmp/forge_literature/papers.json"
 SUBAGENT_FILE = "/tmp/forge_telemetry/subagents.json"
-TRUEFORGE_API = "http://localhost:8790/api/v1"
-
-class ChatMessagePayload(BaseModel):
-    message: str
-    session_id: Optional[str] = None
 
 class CreateItemPayload(BaseModel):
     name: str
@@ -57,125 +49,33 @@ class SaveFilePayload(BaseModel):
     content: str
 
 # -------------------------------------------------------------
-# 💬 TRUEFORGE NATIVE CHAT BRIDGE (forge-researcher default agent)
-# -------------------------------------------------------------
-def get_forge_researcher_agent_id() -> str:
-    """Fetches the exact agent ID for 'forge-researcher'."""
-    try:
-        req = urllib.request.Request(f"{TRUEFORGE_API}/agents")
-        with urllib.request.urlopen(req, timeout=5) as res:
-            data = json.loads(res.read().decode("utf-8"))
-            for agent in data.get("data", []):
-                if agent.get("name") == "forge-researcher":
-                    return agent.get("id")
-    except Exception:
-        pass
-    return "01m1465yeb27dqye87eph35mev"
-
-@app.get("/api/chat/session")
-def get_or_create_session():
-    """Gets the latest forge-researcher session or creates a new one."""
-    agent_id = get_forge_researcher_agent_id()
-    try:
-        req = urllib.request.Request(f"{TRUEFORGE_API}/sessions")
-        with urllib.request.urlopen(req, timeout=5) as res:
-            data = json.loads(res.read().decode("utf-8"))
-            for sess in data.get("data", []):
-                if sess.get("agent", {}).get("name") == "forge-researcher" or sess.get("agent", {}).get("id") == agent_id:
-                    return {"session_id": sess.get("id"), "agent_name": "forge-researcher"}
-    except Exception:
-        pass
-
-    # Create new session
-    try:
-        create_payload = json.dumps({
-            "agent": {
-                "type": "reference",
-                "id": agent_id,
-                "name": "forge-researcher"
-            },
-            "title": "ForgeResearcher Autonomous Lab"
-        }).encode("utf-8")
-        req = urllib.request.Request(
-            f"{TRUEFORGE_API}/sessions",
-            data=create_payload,
-            headers={"Content-Type": "application/json"}
-        )
-        with urllib.request.urlopen(req, timeout=5) as res:
-            new_sess = json.loads(res.read().decode("utf-8"))
-            return {"session_id": new_sess.get("id"), "agent_name": "forge-researcher"}
-    except Exception as e:
-        return {"session_id": "default-session", "agent_name": "forge-researcher", "error": str(e)}
-
-@app.get("/api/chat/messages")
-def get_session_messages(session_id: str):
-    """Fetches messages and tool executions for a given session."""
-    try:
-        req = urllib.request.Request(f"{TRUEFORGE_API}/sessions/{session_id}/messages")
-        with urllib.request.urlopen(req, timeout=5) as res:
-            data = json.loads(res.read().decode("utf-8"))
-            return {"messages": data.get("data", [])}
-    except Exception as e:
-        return {"messages": [], "error": str(e)}
-
-@app.post("/api/chat/send")
-def send_chat_message(payload: ChatMessagePayload):
-    """Sends a user prompt to the TrueForge agent engine."""
-    session_id = payload.session_id
-    if not session_id or session_id == "default-session":
-        sess_info = get_or_create_session()
-        session_id = sess_info.get("session_id")
-
-    try:
-        body = json.dumps({
-            "role": "user",
-            "content": payload.message
-        }).encode("utf-8")
-        req = urllib.request.Request(
-            f"{TRUEFORGE_API}/sessions/{session_id}/messages",
-            data=body,
-            headers={"Content-Type": "application/json"}
-        )
-        with urllib.request.urlopen(req, timeout=30) as res:
-            data = json.loads(res.read().decode("utf-8"))
-            return {"success": True, "session_id": session_id, "data": data}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# -------------------------------------------------------------
-# 🎯 SKILLS MANAGER API
+# 🎯 SKILLS MANAGER API (Completely Separate from Workspace)
 # -------------------------------------------------------------
 @app.get("/api/skills/list")
 def list_skills():
+    """Lists all skills and their SKILL.md files from skills/."""
     skills = []
     if not os.path.exists(SKILLS_DIR):
         return {"skills": []}
 
-    for item in sorted(os.listdir(SKILLS_DIR)):
+    for item in os.listdir(SKILLS_DIR):
         skill_path = os.path.join(SKILLS_DIR, item)
         if os.path.isdir(skill_path):
             doc_file = os.path.join(skill_path, "SKILL.md")
-            if not os.path.exists(doc_file):
-                for root, _, files in os.walk(skill_path):
-                    if "SKILL.md" in files:
-                        doc_file = os.path.join(root, "SKILL.md")
-                        break
-
             desc = "Autonomous research capability skill definition"
             if os.path.exists(doc_file):
                 try:
                     with open(doc_file, "r") as f:
-                        for l in f:
+                        lines = f.readlines()
+                        for l in lines:
                             if l.lower().startswith("description:"):
-                                desc = l.split(":", 1)[1].strip().strip('"').strip("'")
+                                desc = l.split(":", 1)[1].strip()
                                 break
                 except Exception:
                     pass
-            
-            rel_doc_path = os.path.relpath(doc_file, start=".") if os.path.exists(doc_file) else f"skills/{item}/SKILL.md"
             skills.append({
                 "name": item,
-                "path": rel_doc_path,
+                "path": f"skills/{item}/SKILL.md",
                 "dir_path": f"skills/{item}",
                 "description": desc,
                 "has_skill_md": os.path.exists(doc_file)
@@ -184,31 +84,25 @@ def list_skills():
 
 @app.get("/api/skills/read")
 def read_skill_file(path: str):
+    """Reads the exact SKILL.md definition as editable text."""
     safe_path = os.path.abspath(path)
-    if not safe_path.startswith(SKILLS_DIR):
-        raise HTTPException(status_code=400, detail="Path outside skills directory")
-    
-    if not os.path.exists(safe_path):
-        os.makedirs(os.path.dirname(safe_path), exist_ok=True)
-        default_content = f"---\nname: {os.path.basename(os.path.dirname(safe_path))}\ndescription: Autonomous capability skill definition.\n---\n\n# Skill Instructions\n\nDefine specialized protocols and prompts here.\n"
-        with open(safe_path, "w") as f:
-            f.write(default_content)
-        return {"path": path, "content": default_content}
+    if not safe_path.startswith(SKILLS_DIR) or not os.path.exists(safe_path):
+        raise HTTPException(status_code=404, detail="Skill file not found")
     
     try:
-        with open(safe_path, "r", errors="ignore") as f:
+        with open(safe_path, "r") as f:
             return {"path": path, "content": f.read()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/skills/save")
 def save_skill_file(payload: SaveFilePayload):
+    """Saves changes to a skill definition (SKILL.md) to immediately update agent capabilities."""
     safe_path = os.path.abspath(payload.path)
     if not safe_path.startswith(SKILLS_DIR):
         raise HTTPException(status_code=400, detail="Cannot save outside skills/ directory")
     
     try:
-        os.makedirs(os.path.dirname(safe_path), exist_ok=True)
         with open(safe_path, "w") as f:
             f.write(payload.content)
         return {"success": True, "path": payload.path}
@@ -216,10 +110,11 @@ def save_skill_file(payload: SaveFilePayload):
         raise HTTPException(status_code=500, detail=str(e))
 
 # -------------------------------------------------------------
-# 🤖 SUBAGENTS & TELEMETRY
+# 🤖 SUBAGENTS API
 # -------------------------------------------------------------
 @app.get("/api/subagents/tasks")
 def list_subagent_tasks():
+    """Lists all delegated subagent tasks, explicit prompts given by parent, and live status."""
     if os.path.exists(SUBAGENT_FILE):
         try:
             with open(SUBAGENT_FILE, "r") as f:
@@ -230,10 +125,11 @@ def list_subagent_tasks():
     return {"tasks": [], "total": 0}
 
 # -------------------------------------------------------------
-# 📁 WORKSPACE CRUD API
+# 📁 WORKSPACE API (CRUD)
 # -------------------------------------------------------------
 @app.get("/api/workspace/files")
 def list_workspace_files():
+    """Lists all files and directories in workspace/."""
     if not os.path.exists(WORKSPACE_DIR):
         return {"files": [], "total": 0}
     
@@ -269,6 +165,7 @@ def list_workspace_files():
 
 @app.get("/api/workspace/file")
 def read_workspace_file(path: str):
+    """Reads content of a file or returns Base64 image data."""
     safe_path = os.path.abspath(path)
     if not os.path.exists(safe_path):
         raise HTTPException(status_code=404, detail="File not found")
@@ -298,6 +195,7 @@ def read_workspace_file(path: str):
 
 @app.post("/api/workspace/create")
 def create_workspace_item(payload: CreateItemPayload):
+    """Creates a new file or folder in workspace/."""
     target_dir = os.path.join(WORKSPACE_DIR, payload.parent_path) if payload.parent_path else WORKSPACE_DIR
     target_path = os.path.join(target_dir, payload.name)
     try:
@@ -314,6 +212,7 @@ def create_workspace_item(payload: CreateItemPayload):
 
 @app.post("/api/workspace/save")
 def save_workspace_file(payload: SaveFilePayload):
+    """Saves edits to a file in workspace/."""
     safe_path = os.path.abspath(payload.path)
     try:
         with open(safe_path, "w") as f:
@@ -324,6 +223,7 @@ def save_workspace_file(payload: SaveFilePayload):
 
 @app.post("/api/workspace/rename")
 def rename_workspace_item(payload: RenameItemPayload):
+    """Renames a file or folder in workspace/."""
     old_full = os.path.abspath(payload.old_path)
     if not os.path.exists(old_full):
         raise HTTPException(status_code=404, detail="Item not found")
@@ -336,6 +236,7 @@ def rename_workspace_item(payload: RenameItemPayload):
 
 @app.post("/api/workspace/delete")
 def delete_workspace_item(payload: DeleteItemPayload):
+    """Deletes a file or directory in workspace/."""
     target_path = os.path.abspath(payload.path)
     if not os.path.exists(target_path):
         raise HTTPException(status_code=404, detail="Item not found")
@@ -353,6 +254,7 @@ def delete_workspace_item(payload: DeleteItemPayload):
 # -------------------------------------------------------------
 @app.get("/api/literature/papers")
 def list_researched_papers():
+    """Lists papers discovered via arXiv & Semantic Scholar."""
     if os.path.exists(LITERATURE_FILE):
         try:
             with open(LITERATURE_FILE, "r") as f:
@@ -364,6 +266,7 @@ def list_researched_papers():
 
 @app.get("/api/kaggle/latest-logs")
 def get_latest_kaggle_logs():
+    """Fetches real status of the latest Kaggle experiment."""
     if os.path.exists(CACHE_FILE):
         try:
             with open(CACHE_FILE, "r") as f:

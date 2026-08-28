@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   FlaskConical, 
   FileText, 
@@ -30,16 +30,10 @@ import {
   Sparkles,
   Bot,
   Zap,
-  Send,
-  Loader2,
-  ShieldCheck,
-  CheckCircle2,
-  Flame,
-  Search
+  Sliders
 } from 'lucide-react';
 
 export default function App() {
-  // Sidebar state
   const [liveArtifact, setLiveArtifact] = useState('skills');
   const [workspaceFiles, setWorkspaceFiles] = useState([]);
   const [skillsList, setSkillsList] = useState([]);
@@ -50,12 +44,11 @@ export default function App() {
   const [activeFile, setActiveFile] = useState(null);
   const [fileData, setFileData] = useState({ is_image: false, content: "" });
   
-  // Skills Editor state
+  // Skills Editor state (Isolated from workspace)
   const [activeSkill, setActiveSkill] = useState(null);
   const [skillContent, setSkillContent] = useState("");
   const [isSkillSaved, setIsSkillSaved] = useState(false);
 
-  // Kaggle Logs state
   const [kaggleData, setKaggleData] = useState({ active: false, log: "", message: "Awaiting first GPU experiment dispatch..." });
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -68,143 +61,57 @@ export default function App() {
   const [renamingPath, setRenamingPath] = useState(null);
   const [renameValue, setRenameValue] = useState("");
 
-  // -------------------------------------------------------------
-  // 💬 NATIVE CHAT STATE (Connected to forge-researcher)
-  // -------------------------------------------------------------
-  const [sessionId, setSessionId] = useState(null);
-  const [messages, setMessages] = useState([
-    {
-      id: "intro-1",
-      role: "assistant",
-      content: "👋 Hello! I am **ForgeResearcher**, your autonomous empirical ML research harness operating under **Guided Autonomy**.\n\nI have direct access to **Kaggle Cloud GPUs (Tesla P100 / Dual-T4)**, **Hugging Face Hub**, **arXiv API**, **Academic Citations**, **Level-2 Fact-Checking**, and a specialized 4-subagent hierarchy.\n\nHow can I accelerate your ML research today?"
-    }
-  ]);
-  const [inputPrompt, setInputPrompt] = useState("");
-  const [isSending, setIsSending] = useState(false);
-  const chatBottomRef = useRef(null);
-
-  // Fetch session on load
-  const initChatSession = async () => {
-    try {
-      const res = await fetch('http://localhost:8796/api/chat/session');
-      const data = await res.json();
-      if (data.session_id) {
-        setSessionId(data.session_id);
-        fetchMessages(data.session_id);
-      }
-    } catch (e) {
-      console.error("Chat init error:", e);
-    }
-  };
-
-  const fetchMessages = async (sessId) => {
-    if (!sessId) return;
-    try {
-      const res = await fetch(`http://localhost:8796/api/chat/messages?session_id=${sessId}`);
-      const data = await res.json();
-      if (data.messages && data.messages.length > 0) {
-        const formatted = data.messages.map(m => ({
-          id: m.id || Math.random().toString(),
-          role: m.role || (m.type === 'user' ? 'user' : 'assistant'),
-          content: typeof m.content === 'string' ? m.content : (m.text || JSON.stringify(m.content)),
-          tool_calls: m.tool_calls || []
-        }));
-        setMessages(formatted);
-      }
-    } catch (e) {
-      console.error("Fetch messages error:", e);
-    }
-  };
-
-  const handleSendMessage = async (e) => {
-    e?.preventDefault();
-    if (!inputPrompt.trim() || isSending) return;
-
-    const userText = inputPrompt.trim();
-    setInputPrompt("");
-    
-    // Append user message immediately
-    const tempUserMsg = { id: Date.now().toString(), role: "user", content: userText };
-    setMessages(prev => [...prev, tempUserMsg]);
-    setIsSending(true);
-
-    try {
-      const res = await fetch('http://localhost:8796/api/chat/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userText, session_id: sessionId })
-      });
-      const data = await res.json();
-      if (data.session_id && !sessionId) setSessionId(data.session_id);
-
-      // Poll messages
-      setTimeout(() => {
-        fetchMessages(data.session_id || sessionId);
-        fetchWorkspaceAndLiterature();
-      }, 1500);
-      setTimeout(() => {
-        fetchMessages(data.session_id || sessionId);
-        fetchWorkspaceAndLiterature();
-        setIsSending(false);
-      }, 4000);
-    } catch (e) {
-      setMessages(prev => [...prev, { id: Date.now().toString(), role: "assistant", content: `❌ Error communicating with TrueForge agent: ${e.message}` }]);
-      setIsSending(false);
-    }
-  };
-
-  useEffect(() => {
-    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isSending]);
-
-  // -------------------------------------------------------------
-  // 📊 SIDEBAR TELEMETRY FETCH
-  // -------------------------------------------------------------
   const fetchWorkspaceAndLiterature = async () => {
     setIsRefreshing(true);
+    
+    // 1. Skills List
     try {
       const skillRes = await fetch('http://localhost:8796/api/skills/list');
       const skillData = await skillRes.json();
       setSkillsList(skillData.skills || []);
-    } catch (e) {}
+    } catch (e) {
+      setSkillsList([]);
+    }
 
+    // 2. Subagent Delegations
     try {
       const subRes = await fetch('http://localhost:8796/api/subagents/tasks');
       const subData = await subRes.json();
       setSubagentTasks(subData.tasks || []);
-    } catch (e) {}
+    } catch (e) {
+      setSubagentTasks([]);
+    }
 
+    // 3. Workspace Files
     try {
       const res = await fetch('http://localhost:8796/api/workspace/files');
       const data = await res.json();
       setWorkspaceFiles(data.files || []);
-    } catch (e) {}
+    } catch (e) {
+      setWorkspaceFiles([]);
+    }
 
+    // 4. Papers
     try {
       const paperRes = await fetch('http://localhost:8796/api/literature/papers');
       const paperData = await paperRes.json();
       setPapers(paperData.papers || []);
-    } catch (e) {}
+    } catch (e) {
+      setPapers([]);
+    }
 
+    // 5. Kaggle Logs
     try {
       const logRes = await fetch('http://localhost:8796/api/kaggle/latest-logs');
       const logData = await logRes.json();
       setKaggleData(logData);
-    } catch (e) {}
+    } catch (e) {
+      setKaggleData({ active: false, message: "Awaiting first GPU experiment dispatch..." });
+    }
     setIsRefreshing(false);
   };
 
-  useEffect(() => {
-    initChatSession();
-    fetchWorkspaceAndLiterature();
-    const interval = setInterval(() => {
-      fetchWorkspaceAndLiterature();
-      if (sessionId) fetchMessages(sessionId);
-    }, 3500);
-    return () => clearInterval(interval);
-  }, [sessionId]);
-
-  // Skill Editor
+  // Open Skill Definition in Editor
   const openSkillEditor = async (skill) => {
     setActiveSkill(skill);
     try {
@@ -237,7 +144,7 @@ export default function App() {
     }
   };
 
-  // Workspace
+  // Workspace file handlers
   const openFileViewer = async (filePath) => {
     setActiveFile(filePath);
     try {
@@ -339,6 +246,12 @@ export default function App() {
     }
   };
 
+  useEffect(() => {
+    fetchWorkspaceAndLiterature();
+    const interval = setInterval(fetchWorkspaceAndLiterature, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
   const getFileIcon = (file) => {
     if (file.is_dir) return <Folder style={{ height: '16px', width: '16px', color: '#a78bfa' }} />;
     if (file.is_image) return <ImageIcon style={{ height: '16px', width: '16px', color: '#f472b6' }} />;
@@ -394,7 +307,7 @@ export default function App() {
           </div>
 
           <a href="http://localhost:8790" target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: '#c4b5fd', padding: '4px 10px', borderRadius: '6px', backgroundColor: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.25)', textDecoration: 'none', fontWeight: '600' }}>
-            <span>Engine</span>
+            <span>Core</span>
             <ExternalLink style={{ height: '11px', width: '11px' }} />
           </a>
         </div>
@@ -403,104 +316,13 @@ export default function App() {
       {/* 🚀 Main Split-Screen Workspace */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         
-        {/* 💬 Center Panel: 100% NATIVE CUSTOM FORGERESEARCHER CHAT INTERFACE */}
+        {/* 💬 Center Panel: TRUE LIVE TrueForge Backend WebSocket Chat Container */}
         <main style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#07080c', position: 'relative' }}>
-          
-          {/* Native Agent Header */}
-          <div style={{ height: '48px', borderBottom: '1px solid rgba(255,255,255,0.05)', backgroundColor: '#090a12', padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ height: '24px', width: '24px', borderRadius: '6px', backgroundColor: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Bot style={{ height: '14px', width: '14px', color: '#c4b5fd' }} />
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '13px', fontWeight: '700', color: '#fff' }}>forge-researcher</span>
-                <span style={{ fontSize: '10px', fontFamily: 'monospace', padding: '1px 6px', borderRadius: '4px', backgroundColor: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.3)', fontWeight: '600' }}>DEFAULT AGENT</span>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <button 
-                onClick={() => handleSendMessage({ preventDefault: () => {} }, "Search arXiv for latest tabular deep learning papers and propose 3 hypotheses.")}
-                style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '6px', backgroundColor: '#131624', border: '1px solid rgba(255,255,255,0.06)', color: '#94a3b8', cursor: 'pointer' }}
-              >
-                🔬 Research arXiv
-              </button>
-              <button 
-                onClick={() => handleSendMessage({ preventDefault: () => {} }, "Run a hello world baseline experiment on Kaggle GPU.")}
-                style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '6px', backgroundColor: '#131624', border: '1px solid rgba(255,255,255,0.06)', color: '#34d399', cursor: 'pointer' }}
-              >
-                ⚡ Dispatch GPU
-              </button>
-            </div>
-          </div>
-
-          {/* Messages Stream */}
-          <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {messages.map((msg, i) => (
-              <div 
-                key={msg.id || i}
-                style={{ 
-                  display: 'flex', 
-                  flexDirection: 'column',
-                  alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                  maxWidth: msg.role === 'user' ? '70%' : '85%',
-                  gap: '4px'
-                }}
-              >
-                <div style={{ fontSize: '10px', color: '#64748b', marginLeft: msg.role === 'user' ? 'auto' : '4px', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: '700' }}>
-                  {msg.role === 'user' ? 'You' : 'ForgeResearcher'}
-                </div>
-
-                <div 
-                  style={{ 
-                    padding: '12px 16px', 
-                    borderRadius: '12px',
-                    backgroundColor: msg.role === 'user' ? '#7c3aed' : '#10131d',
-                    color: '#f8fafc',
-                    border: msg.role === 'user' ? 'none' : '1px solid rgba(255,255,255,0.06)',
-                    boxShadow: msg.role === 'user' ? '0 4px 16px rgba(124,58,237,0.25)' : 'none',
-                    fontSize: '13px',
-                    lineHeight: '1.6',
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word'
-                  }}
-                >
-                  {msg.content}
-                </div>
-              </div>
-            ))}
-
-            {isSending && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#a78bfa', fontSize: '12px', padding: '8px 12px', borderRadius: '8px', backgroundColor: '#10131d', width: 'fit-content', border: '1px solid rgba(124,58,237,0.2)' }}>
-                <Loader2 style={{ height: '14px', width: '14px', animation: 'spin 1s linear infinite' }} />
-                <span>ForgeResearcher reasoning & executing research tools...</span>
-              </div>
-            )}
-
-            <div ref={chatBottomRef} />
-          </div>
-
-          {/* Native Message Input Bar */}
-          <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.06)', backgroundColor: '#090a12' }}>
-            <form onSubmit={handleSendMessage} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <input 
-                type="text"
-                value={inputPrompt}
-                onChange={(e) => setInputPrompt(e.target.value)}
-                placeholder="Ask ForgeResearcher to search literature, formulate hypotheses, or dispatch Kaggle GPU runs..."
-                style={{ flex: 1, padding: '12px 16px', borderRadius: '10px', backgroundColor: '#0d101a', border: '1px solid rgba(255,255,255,0.08)', color: '#fff', fontSize: '13px', outline: 'none' }}
-              />
-              <button 
-                type="submit" 
-                disabled={isSending || !inputPrompt.trim()}
-                style={{ padding: '12px 20px', borderRadius: '10px', backgroundColor: '#7c3aed', color: '#fff', border: 'none', fontSize: '13px', fontWeight: '700', cursor: isSending || !inputPrompt.trim() ? 'not-allowed' : 'pointer', opacity: isSending || !inputPrompt.trim() ? 0.5 : 1, display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.15s ease' }}
-              >
-                <span>Send</span>
-                <Send style={{ height: '14px', width: '14px' }} />
-              </button>
-            </form>
-          </div>
-
+          <iframe 
+            src="http://localhost:8790" 
+            style={{ width: '100%', height: '100%', border: 'none', backgroundColor: '#07080c' }}
+            title="TrueForge Live Agent Chat"
+          />
         </main>
 
         {/* 📊 Right Panel: Dedicated Studio Sidebar */}
@@ -601,7 +423,7 @@ export default function App() {
             </div>
           )}
 
-          {/* VIEW 1: Dedicated Full-Sidebar SKILL.MD Editor */}
+          {/* VIEW 1: Dedicated Full-Sidebar SKILL.MD Editor (Isolated from Workspace) */}
           {activeSkill && (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#07080c' }}>
               <div style={{ height: '44px', borderBottom: '1px solid rgba(255,255,255,0.06)', backgroundColor: '#0c0e18', padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -623,7 +445,7 @@ export default function App() {
                     style={{ background: '#161928', border: '1px solid rgba(251,191,36,0.4)', color: isSkillSaved ? '#34d399' : '#fbbf24', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', padding: '4px 8px', borderRadius: '4px', fontWeight: '600' }}
                   >
                     {isSkillSaved ? <Check style={{ height: '11px', width: '11px' }} /> : <Save style={{ height: '11px', width: '11px' }} />}
-                    <span>{isSkillSaved ? 'Saved' : 'Save Skill'}</span>
+                    <span>{isSkillSaved ? 'Saved & Hot-Reloaded' : 'Save Skill'}</span>
                   </button>
                 </div>
               </div>
@@ -702,7 +524,7 @@ export default function App() {
             </div>
           )}
 
-          {/* VIEW 3: Dedicated Skills Explorer */}
+          {/* VIEW 3: Dedicated Skills Explorer (Separate Tab) */}
           {!activeFile && !activeSkill && liveArtifact === 'skills' && (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
