@@ -1,13 +1,11 @@
 """
 Research Lab Streamable HTTP / SSE FastMCP Gateway
-Serves all ForgeResearcher research tools over HTTP so TrueForge can connect instantly.
+Serves all ForgeResearcher research tools over HTTP/SSE.
 """
 from typing import Dict, Any, List
+import asyncio
+import os
 import uvicorn
-from starlette.applications import Starlette
-from starlette.routing import Route, Mount
-from starlette.responses import JSONResponse
-import mcp.types as types
 from mcp.server.mcpserver import MCPServer
 
 from mcp_servers.arxiv_mcp.server import search_arxiv
@@ -20,7 +18,7 @@ server = MCPServer("forge-researcher-tools")
 
 @server.tool()
 def search_arxiv_papers(query: str, max_results: int = 5) -> Dict[str, Any]:
-    """Search arXiv papers by topic."""
+    """Search arXiv papers by topic over HTTPS."""
     return search_arxiv(query, max_results)
 
 @server.tool()
@@ -66,6 +64,4 @@ def verify_scientific_claims_audit(paper_tex_path: str, results_tsv_path: str) -
     return audit_scientific_claims(paper_tex_path, results_tsv_path)
 
 if __name__ == "__main__":
-    import asyncio
-    # Run FastMCP over SSE / HTTP transport on port 8795
-    server.run(transport="sse", port=8795, host="0.0.0.0")
+    server.run(transport="sse", port=8795, host="127.0.0.1")
