@@ -1,5 +1,10 @@
 """
-Auto-Register ForgeResearcher with Official Kaggle MCP, Colab MCP & Research Toolkit
+Auto-Register ForgeResearcher with Explicit Guided Autonomy Subagent Roles
+Configures the parent `research-manager` with the 4 contracted subagent roles:
+- `eval-worker` (LM evaluation harness / code sandbox)
+- `plot-worker` (Academic plotting engine)
+- `write-worker` (LaTeX 2-column paper synthesis)
+- `rigor-worker` (Level-2 empirical fact-checker)
 """
 import os
 import json
@@ -28,7 +33,7 @@ def make_request(endpoint, method="GET", data=None):
 
 def setup():
     print("=" * 60)
-    print("⚡ CONFIGURING TRUEFORGE WITH KAGGLE & GOOGLE COLAB INTEGRATION")
+    print("⚡ CONFIGURING TRUEFORGE WITH GUIDED AUTONOMY SUBAGENTS")
     print("=" * 60)
 
     # 1. Connect
@@ -37,8 +42,7 @@ def setup():
         print(f"  ❌ Cannot connect to TrueForge: {mcp_check['error']}")
         return False
 
-    # 2. Register Authenticated Remote Kaggle MCP Server (https://www.kaggle.com/mcp)
-    print(f"\n[1/3] Registering authenticated Kaggle MCP server (User: {KAGGLE_USER})...")
+    # 2. Register Authenticated Remote Kaggle MCP Server
     kaggle_payload = {
         "manifest": {
             "type": "remote",
@@ -54,10 +58,8 @@ def setup():
         }
     }
     make_request("/settings/mcp-servers", method="PUT", data=kaggle_payload)
-    print(f"  ✓ Registered authenticated 'kaggle' MCP server!")
 
     # 3. Register local Research & Colab Tools
-    print("\n[2/3] Registering 'forge-researcher-tools' (Colab, arXiv, Plotting, LaTeX, Rigor)...")
     tools_payload = {
         "manifest": {
             "type": "remote",
@@ -67,7 +69,6 @@ def setup():
         }
     }
     make_request("/settings/mcp-servers", method="PUT", data=tools_payload)
-    print("  ✓ Registered 'forge-researcher-tools' MCP server!")
 
     # 4. Detect Model
     providers_res = make_request("/settings/model-providers")
@@ -79,8 +80,33 @@ def setup():
         if models:
             model_name = f"{prov_name}/{models[0].get('name')}"
 
-    print(f"\n[3/3] Registering 'forge-researcher' Agent...")
+    print(f"\nRegistering 'forge-researcher' with Guided Autonomy Subagent Contracts...")
     
+    agent_instructions = (
+        "You are 'forge-researcher', an autonomous empirical ML research harness operating under GUIDED AUTONOMY.\n\n"
+        f"AUTHENTICATED KAGGLE USER: {KAGGLE_USER}\n\n"
+        "## SUBAGENT ROLES & CONTRACTS (You MUST orchestrate these via `create_sub_agent`):\n"
+        "When executing a full research cycle or complex exploration, you delegate to these 4 contracted sub-agents:\n"
+        "1. **`eval-worker`** (Role: Code Sandbox & Benchmark Evaluation)\n"
+        "   - Contract: Writes experiment scripts and runs them in `workspace/` sandbox.\n"
+        "   - Output: Emits `workspace/results.tsv` containing iteration, val_loss, and val_acc.\n"
+        "2. **`plot-worker`** (Role: Academic Plotting Engine)\n"
+        "   - Contract: Invokes `generate_publication_plots` on `workspace/results.tsv`.\n"
+        "   - Output: Generates publication loss and comparison charts in `workspace/figures/`.\n"
+        "3. **`write-worker`** (Role: LaTeX Conference Manuscript Synthesis)\n"
+        "   - Contract: Uses official conference templates (NeurIPS, ICLR, ICML) to write `workspace/paper.tex`.\n"
+        "   - Output: Invokes `render_latex_manuscript` with abstract, methodology, and embedded figures.\n"
+        "4. **`rigor-worker`** (Role: Level-2 Scientific Fact-Checker & Auditor)\n"
+        "   - Contract: Invokes `audit_scientific_claims` to fact-check numbers in `workspace/paper.tex` against raw numbers in `workspace/results.tsv`.\n"
+        "   - Output: Produces `workspace/rigor_audit.json` to prevent metric hallucination.\n\n"
+        "## RESEARCH WORKFLOW & APPROVAL GATES:\n"
+        "Step 1: Literature Search — Call `search_arxiv` or `search_semantic_scholar` to pull real papers.\n"
+        "Step 2: Hypothesis Matrix — Propose 3 experimental trials with metrics and budget.\n"
+        "Step 3: APPROVAL GATE #1 — Pause and ask the user: 'Do you approve running these compute trials in the sandbox?'\n"
+        "Step 4: Delegation — Spawn `eval-worker`, `plot-worker`, `write-worker`, and `rigor-worker` in sequence.\n"
+        "Step 5: APPROVAL GATE #2 — Present audit results and ask for user approval before finalizing the PDF."
+    )
+
     agent_payload = {
         "name": "forge-researcher",
         "manifest": {
@@ -88,25 +114,7 @@ def setup():
                 "name": model_name,
                 "params": {"reasoning_effort": "minimal"}
             },
-            "instructions": (
-                "You are 'forge-researcher', an autonomous empirical ML research assistant with full Google Colab, Kaggle, and literature search integrations.\n\n"
-                f"AUTHENTICATED KAGGLE USER: {KAGGLE_USER}\n\n"
-                "YOUR ATTACHED CAPABILITIES:\n"
-                "1. `kaggle` MCP Server (Authenticated via Kaggle Bearer Token):\n"
-                "   - Notebooks: List, start, manage, and retrieve outputs for your Kaggle Notebooks & GPU compute.\n"
-                "   - Datasets: Search, list files, and inspect dataset metadata.\n"
-                "   - Competitions: Search competitions, download files, and submit solutions.\n"
-                "   - Models & Benchmarking: Manage Kaggle models and benchmarks.\n\n"
-                "2. `forge-researcher-tools` MCP Server:\n"
-                "   - `open_google_colab_session`: Launches Google Colab in browser with Colab MCP bridge for interactive cell execution.\n"
-                "   - `inspect_colab_and_kaggle_compute`: Profiles Colab GPU/TPU & Kaggle compute boundaries.\n"
-                "   - `search_arxiv_papers`: Query arXiv API for research papers.\n"
-                "   - `search_academic_citations`: Query CrossRef & Semantic Scholar citations.\n"
-                "   - `analyze_dataset_profile`: Profile CSV/TSV statistics & shapes.\n"
-                "   - `generate_academic_figures`: Draw dual-axis loss curves and benchmark bar charts.\n"
-                "   - `compile_latex_paper`: Draft 2-column conference LaTeX papers.\n"
-                "   - `verify_scientific_claims_audit`: Perform Level-2 empirical fact-checking."
-            ),
+            "instructions": agent_instructions,
             "mcp_servers": [
                 {"name": "kaggle", "enable_tools": ["@all"], "preload": True},
                 {"name": "forge-researcher-tools", "enable_tools": ["@all"], "preload": True}
@@ -141,10 +149,10 @@ def setup():
     if "error" in agent_res:
         print(f"  ❌ Error creating agent: {agent_res['error']}")
     else:
-        print("  ✓ Created agent 'forge-researcher' with Google Colab & Kaggle access!")
+        print("  ✓ Created agent 'forge-researcher' with explicit Guided Autonomy Subagent hierarchy!")
 
     print("\n" + "=" * 60)
-    print("🎉 GOOGLE COLAB & KAGGLE ARE FULLY CONFIGURED!")
+    print("🎉 GUIDED AUTONOMY SUBAGENTS ARE CONFIGURED!")
     print("=" * 60)
 
 if __name__ == "__main__":
