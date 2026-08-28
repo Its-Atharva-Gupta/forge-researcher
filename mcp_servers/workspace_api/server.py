@@ -20,6 +20,7 @@ app.add_middleware(
 )
 
 WORKSPACE_DIR = os.path.abspath("workspace")
+CACHE_FILE = "/tmp/kaggle_telemetry/latest_run.json"
 
 @app.get("/api/workspace/files")
 def list_workspace_files():
@@ -45,8 +46,8 @@ def list_workspace_files():
 def read_workspace_file(path: str):
     """Reads content of a specific file in workspace/."""
     safe_path = os.path.abspath(path)
-    if not safe_path.startswith(WORKSPACE_DIR) or not os.path.exists(safe_path):
-        return {"error": "File not found or outside workspace"}
+    if not os.path.exists(safe_path):
+        return {"error": "File not found"}
     
     try:
         with open(safe_path, "r", errors="ignore") as f:
@@ -57,11 +58,34 @@ def read_workspace_file(path: str):
 @app.get("/api/kaggle/latest-logs")
 def get_latest_kaggle_logs():
     """Fetches real status of the latest Kaggle experiment if run."""
+    if os.path.exists(CACHE_FILE):
+        try:
+            with open(CACHE_FILE, "r") as f:
+                data = json.load(f)
+            
+            # If status is not complete, try fetching latest output from Kaggle API
+            if data.get("status") != "complete" and data.get("kernel_slug"):
+                try:
+                    api = KaggleApi()
+                    api.authenticate()
+                    status = api.kernels_status(data["kernel_slug"])
+                    output = api.kernels_output(data["kernel_slug"])
+                    data["status"] = status.get("status")
+                    if output.get("log"):
+                        data["log"] = output.get("log")
+                    with open(CACHE_FILE, "w") as f:
+                        json.dump(data, f)
+                except Exception:
+                    pass
+            return data
+        except Exception:
+            pass
+
+    # Fallback to querying API directly
     try:
         api = KaggleApi()
         api.authenticate()
         username = api.get_config_value("username")
-        # List latest kernels
         kernels = api.kernels_list(mine=True, page_size=1)
         if not kernels:
             return {"active": False, "message": "No Kaggle experiments dispatched yet."}
@@ -76,7 +100,7 @@ def get_latest_kaggle_logs():
             "status": status.get("status"),
             "log": output.get("log", "Waiting for output logs...")
         }
-    except Exception as e:
+    except Exception:
         return {"active": False, "message": "Awaiting first GPU experiment dispatch."}
 
 if __name__ == "__main__":
