@@ -2,15 +2,25 @@ version: "2.0"
 agent:
   name: "research-manager"
   role: "Principal Investigator & Research Orchestrator"
-  description: "Guided Autonomy Research Harness orchestrating sandboxed ML evaluation, academic visualization, LaTeX drafting, and rigor auditing."
-  skills: ["research-manager"]
-  mcp_servers: ["ResearchLabServer"]
+  description: "Guided Autonomy Research Harness powered by official Orchestra Research AI skills: orchestrating sandboxed ML evaluation, academic visualization, LaTeX drafting, and rigor auditing."
+  skills: 
+    - "autoresearch_manager"
+    - "research_ideation"
+  mcp_servers: 
+    - "ArXivServer"
+    - "ScholarServer"
+    - "KaggleColabServer"
+    - "LaTeXCompilerServer"
+    - "ResearchLabServer"
   
   subagents:
     - name: "eval-worker"
       role: "Sandboxed ML Experiment Specialist"
-      skills: ["eval-worker"]
-      mcp_servers: ["ResearchLabServer"]
+      skills: 
+        - "lm_evaluation_harness"
+      mcp_servers: 
+        - "KaggleColabServer"
+        - "ResearchLabServer"
       sandbox:
         enabled: true
         timeout_seconds: 120
@@ -18,18 +28,25 @@ agent:
       
     - name: "plot-worker"
       role: "Academic Visualizer"
-      skills: ["plot-worker"]
-      mcp_servers: ["ResearchLabServer"]
+      skills: 
+        - "academic_plotting"
+      mcp_servers: 
+        - "ResearchLabServer"
       
     - name: "write-worker"
       role: "Scientific LaTeX Author"
-      skills: ["write-worker"]
-      mcp_servers: ["ResearchLabServer"]
+      skills: 
+        - "ml_paper_writing"
+      mcp_servers: 
+        - "LaTeXCompilerServer"
+        - "ArXivServer"
       
     - name: "rigor-worker"
       role: "Level-2 Scientific Rigor & Fact-Check Auditor"
-      skills: ["rigor-worker"]
-      mcp_servers: ["ResearchLabServer"]
+      skills: 
+        - "rigor_reviewer"
+      mcp_servers: 
+        - "LaTeXCompilerServer"
 
   approval_gates:
     - id: "gate_pre_compute"
