@@ -1,6 +1,7 @@
 """
 Unified FastMCP SSE Gateway for ForgeResearcher
 Serves full research suite including direct Kaggle GPU Cloud Compute execution:
+- `search_kaggle_datasets`: Search datasets across Kaggle.
 - `run_experiment_on_kaggle_gpu`: Dispatches ML models to Kaggle NVIDIA T4 Dual-GPU/TPU compute.
 - `get_kaggle_experiment_logs`: Fetches logs and results from running Kaggle GPU experiments.
 - `inspect_kaggle_and_local_compute`: Profiles Kaggle Cloud GPU hardware.
@@ -12,7 +13,7 @@ Serves full research suite including direct Kaggle GPU Cloud Compute execution:
 from typing import Dict, Any, List, Optional
 from fastmcp import FastMCP
 
-from mcp_servers.kaggle_colab_mcp.server import run_experiment_on_kaggle_gpu, get_kaggle_experiment_logs, inspect_kaggle_and_local_compute
+from mcp_servers.kaggle_mcp.server import search_kaggle_datasets, run_experiment_on_kaggle_gpu, get_kaggle_experiment_logs, inspect_kaggle_and_local_compute
 from mcp_servers.huggingface_mcp.server import search_huggingface_models, search_huggingface_datasets, search_huggingface_spaces
 from mcp_servers.arxiv_mcp.server import search_arxiv
 from mcp_servers.scholar_mcp.server import search_semantic_scholar
@@ -22,6 +23,7 @@ from mcp_servers.research_lab_mcp.server import profile_dataset, generate_public
 mcp = FastMCP("forge-researcher-tools")
 
 # 1. Kaggle Remote Cloud GPU/TPU Execution Tools
+mcp.tool()(search_kaggle_datasets)
 mcp.tool()(run_experiment_on_kaggle_gpu)
 mcp.tool()(get_kaggle_experiment_logs)
 mcp.tool()(inspect_kaggle_and_local_compute)
