@@ -67,7 +67,12 @@ uv pip install -r <(echo "pytest mcp pandas matplotlib scikit-learn numpy")
 .venv/bin/python -m pytest tests/
 ```
 
-### 3. Launch TrueForge Harness
+### 3. Run End-to-End Simulation
+```bash
+PYTHONPATH=. .venv/bin/python run_end_to_end_simulation.py
+```
+
+### 4. Launch TrueForge Harness
 ```bash
 npx @truefoundry/trueforge@latest
 # Open TrueForge dashboard on http://localhost:8790
@@ -83,14 +88,17 @@ In accordance with hackathon engineering best practices, every substantive featu
   - *Summary:* Implemented initial FastMCP tools for dataset profiling, plotting, and code validation.
   - *Qodo Review:* Automated review conducted on PR creation.
 - **[PR #2: Karpathy-style 3-File AutoResearch Sandbox Environment](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/2)**
-  - *Summary:* Prototyped fixed benchmark sandbox environment.
+  - *Summary:* Prototyped initial fixed benchmark sandbox environment.
   - *Qodo Review:* Automated review conducted on PR creation.
 - **[PR #3: TrueForge Agent Skills, Subagent Hierarchy, and Approval Gates](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/3)**
   - *Summary:* Configured subagent hierarchy and defined approval gates in `trueforge_config/agent.yaml`.
   - *Qodo Review:* Automated review conducted on PR creation.
 - **[PR #4: Guided Autonomy Parent Manager and 4-Subagent Hierarchy](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/4)**
-  - *Summary:* Full refactor to Guided Autonomy architecture: Parent `research-manager`, strict input/output subagents (`eval-worker`, `plot-worker`, `write-worker`, `rigor-worker`), integrated arXiv tool, and Level-2 rigor auditor.
-  - *Qodo Review:* Automated review conducted on PR creation.
+  - *Summary:* Full refactor to Guided Autonomy: Parent `research-manager`, contracted subagents (`eval-worker`, `plot-worker`, `write-worker`, `rigor-worker`), integrated arXiv tool, and Level-2 rigor auditor.
+  - *Qodo Review:* Automated review conducted on PR creation with detailed findings.
+- **[PR #5: Fix MCP Server based on Qodo Review Findings](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/5)**
+  - *Summary:* Fixed all issues surfaced by Qodo: upgraded arXiv API to HTTPS transport, enforced strict metric column validation in plotting to prevent blank images, and added LaTeX special character escaping.
+  - *Qodo Review:* Verified and merged cleanly into `master`.
 
 ---
 
@@ -111,6 +119,7 @@ In accordance with hackathon engineering best practices, every substantive featu
 ├── trueforge_config/
 │   ├── agent.yaml              # TrueForge agent definition & approval gates
 │   └── mcp_settings.json       # MCP configuration
+├── run_end_to_end_simulation.py # Full executable pipeline simulation script
 ├── tests/                      # Automated verification test suite
 └── docs/
     ├── REQUIREMENTS.md         # Hackathon requirements dossier
