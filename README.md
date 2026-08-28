@@ -1,6 +1,6 @@
 # ForgeResearcher 🔬⚡
 
-> **Autonomous Empirical ML Research Harness built on TrueForge with Guided Autonomy, Sandboxed Execution, Multi-Subagent Routing, 5 Dedicated MCP Servers, Official Orchestra Research Skills, and Qodo Code Review.**
+> **Autonomous Empirical ML Research Harness built on TrueForge with Guided Autonomy, Sandboxed Execution, Multi-Subagent Routing, FastMCP Server Ecosystem (Kaggle Cloud GPU Dispatcher, Hugging Face Hub, arXiv HTTPS, Scholar/CrossRef, LaTeX Compiler, Level-2 Rigor Auditor), Official Orchestra Research Skills, and Qodo Code Review.**
 
 Developed for the **WeMakeDevs Agent Harness Hackathon (TrueForge)** in partnership with **TrueFoundry** & **Qodo**.
 
@@ -8,7 +8,7 @@ Developed for the **WeMakeDevs Agent Harness Hackathon (TrueForge)** in partners
 
 ## ⚡ 1-Command Setup (Zero Configuration)
 
-If TrueForge is running on your machine (`npx @truefoundry/trueforge` on `http://localhost:8790`), you can set up and register the entire agent with **just one command**:
+If TrueForge is running on your machine (`npx @truefoundry/trueforge` on `http://localhost:8790`), you can set up, configure, and register the entire agent with **just one command**:
 
 ```bash
 ./start.sh
@@ -16,7 +16,7 @@ If TrueForge is running on your machine (`npx @truefoundry/trueforge` on `http:/
 
 **What `./start.sh` does automatically:**
 1. Sets up the Python environment using `uv`.
-2. Starts the **FastMCP Research Tool Gateway** (arXiv, Scholar, Kaggle, LaTeX compiler, and Rigor Fact-Checker).
+2. Starts the **FastMCP Research Tool Gateway** (Kaggle Cloud GPU Dispatcher, Hugging Face Hub, arXiv, CrossRef/Scholar, LaTeX compiler, and Rigor Fact-Checker).
 3. Connects to TrueForge's REST API, registers the tools, and creates the **`forge-researcher`** agent.
 4. Opens ready-to-use in TrueForge at `http://localhost:8790`!
 
@@ -32,17 +32,17 @@ flowchart TD
     
     subgraph Guided Autonomy Engine
         RM --> Plan[1. Formulate Hypothesis Matrix & Time Budget]
-        Plan --> Gate1{Approval Gate #1: Authorize Sandboxed Compute}
+        Plan --> Gate1{Approval Gate #1: Authorize Sandboxed / Cloud Compute}
         
         Gate1 -- Approved --> SubA[Subagent A: eval-worker]
         
         subgraph Subagent Contracts
-            SubA -->|Dynamically writes & executes in Sandbox| Res[Emits workspace/results.tsv]
+            SubA -->|Dispatches to Kaggle Cloud GPU or Local Sandbox| Res[Emits workspace/results.tsv]
             Res --> SubB[Subagent B: plot-worker]
             SubB -->|Generates publication figures| Figs[Emits workspace/figures/]
             
             Res & Figs --> SubC[Subagent C: write-worker]
-            SubC -->|Drafts LaTeX manuscript| Paper[Emits workspace/paper.tex]
+            SubC -->|Drafts 2-column LaTeX manuscript| Paper[Emits workspace/paper.tex]
             
             Paper --> SubD[Subagent D: rigor-worker]
             SubD -->|Level-2 Audit: Verifies claims vs data| Audit[Emits workspace/rigor_audit.json]
@@ -62,26 +62,56 @@ flowchart TD
 | :--- | :--- | :--- | :--- |
 | **`research-manager`** | `autoresearch_manager` | `skills/autoresearch_manager/` | High-level research orchestration, continuous state tracking, and subagent routing. |
 | **`research-manager`** | `research_ideation` | `skills/research_ideation/` | Hypothesis brainstorming, feasibility scoring, and methodology formulation. |
-| **`eval-worker`** | `lm_evaluation_harness` | `skills/lm_evaluation_harness/` | Benchmarked metric evaluation contracts & sandbox testing. |
+| **`eval-worker`** | `lm_evaluation_harness` | `skills/lm_evaluation_harness/` | Benchmarked metric evaluation contracts & GPU sandbox testing. |
 | **`plot-worker`** | `academic_plotting` | `skills/academic_plotting/` | Publication-grade dual-axis figures (learning curves & comparison bar charts). |
 | **`write-worker`** | `ml_paper_writing` | `skills/ml_paper_writing/` | 2-column LaTeX conference manuscript synthesis (NeurIPS, ICLR, ICML templates). |
 | **`rigor-worker`** | `rigor_reviewer` | `skills/rigor_reviewer/` | Level-2 scientific fact-checking & claim verification against empirical logs. |
 
 ---
 
-## 🔌 5 Dedicated FastMCP Servers
+## 🔌 Dedicated FastMCP Server Ecosystem
 
-| FastMCP Server | Path | Tools Provided |
+| FastMCP Server / Toolset | Tools Provided | Description |
 | :--- | :--- | :--- |
-| **`ArXivServer`** | `mcp_servers/arxiv_mcp/server.py` | `search_arxiv`: Queries arXiv API over HTTPS for titles, abstracts, and author citations. |
-| **`ScholarServer`** | `mcp_servers/scholar_mcp/server.py` | `search_semantic_scholar`: Semantic Scholar & Google Scholar citation tracking and PDF lookups. |
-| **`KaggleColabServer`** | `mcp_servers/kaggle_colab_mcp/server.py` | `search_open_datasets`: Discovers datasets; `check_compute_environment`: Profiles compute boundaries. |
-| **`LaTeXCompilerServer`** | `mcp_servers/latex_compiler_mcp/server.py` | `render_latex_manuscript`: 2-column LaTeX compiler; `audit_scientific_claims`: Level-2 rigor auditor. |
-| **`ResearchLabServer`** | `mcp_servers/research_lab_mcp/server.py` | `profile_dataset`: Data summarizer; `generate_publication_plots`: Dual-axis plotting engine. |
+| **`Kaggle GPU Dispatcher`** | `run_experiment_on_kaggle_gpu`, `get_kaggle_experiment_logs` | Dispatches training scripts with `enable_gpu: true` to remote Kaggle NVIDIA T4 Dual-GPU / TPU cloud compute. |
+| **`Hugging Face Hub`** | `search_huggingface_models`, `search_huggingface_datasets`, `search_huggingface_spaces` | Discovers pretrained models, tokenizers, checkpoints, and benchmark datasets on Hugging Face. |
+| **`Google Colab MCP`** | `open_google_colab_session`, `inspect_colab_and_kaggle_compute` | Integrates official `googlecolab/colab-mcp` browser session bridge for interactive GPU/TPU notebook execution. |
+| **`ArXiv MCP`** | `search_arxiv` | Queries the official arXiv API over HTTPS for recent papers, abstracts, and authors with multi-mirror failover. |
+| **`Scholar / CrossRef`** | `search_semantic_scholar` | Queries CrossRef Academic Index and Semantic Scholar for citation graphs and literature surveys. |
+| **`LaTeX Compiler & Rigor`** | `render_latex_manuscript`, `audit_scientific_claims` | Compiles 2-column conference papers and executes Level-2 empirical fact-checking against raw results. |
+| **`Research Lab`** | `profile_dataset`, `generate_publication_plots` | Profiles CSV/TSV datasets and draws dual-axis loss and metric comparison figures. |
 
 ---
 
-## 🚀 Running Verification & Local Simulation
+## 🔍 Qodo Code Review Trail (All PRs Merged to `master`)
+
+Every feature and fix was developed through branch-based Pull Requests reviewed by **Qodo**:
+
+- **[PR #1: FastMCP Research Lab Server](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/1)**
+- **[PR #2: Baseline AutoResearch Sandbox Environment](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/2)**
+- **[PR #3: Initial TrueForge Skills & Approval Gates](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/3)**
+- **[PR #4: Guided Autonomy Hierarchy & Level-2 Rigor Auditor](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/4)**
+- **[PR #5: Fix MCP Server based on Qodo Findings (HTTPS transport, column validation)](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/5)**
+- **[PR #6: Decompose into 5 Dedicated FastMCP Servers](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/6)**
+- **[PR #7: Integrate Official Orchestra Research AI-research-SKILLs Packages](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/7)**
+- **[PR #8: 1-Command Auto-Registration Launcher for TrueForge](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/8)**
+- **[PR #9: MCP Server Background Process Persistence & 127.0.0.1 Binding](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/9)**
+- **[PR #10: Enable `preload: true` for Instant Tool Availability in TrueForge](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/10)**
+- **[PR #11: Robust Network Failovers, CrossRef Indexing, and Built-in Datasets](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/11)**
+- **[PR #12: Register Explicit Named MCP Servers](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/12)**
+- **[PR #13: Official Kaggle SDK Integration](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/13)**
+- **[PR #14: Kaggle Kernel Push & Cloud Execution Tools](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/14)**
+- **[PR #15: Connect Official Remote Kaggle MCP Server Endpoint](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/15)**
+- **[PR #16: Authenticated Kaggle MCP Integration in TrueForge](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/16)**
+- **[PR #17: Official Google Colab MCP Package & Browser Session Bridge](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/17)**
+- **[PR #18: Fix FunctionTool Callable Bug](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/18)**
+- **[PR #19: Embed Explicit 4-Subagent Guided Autonomy Roster into TrueForge Prompt](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/19)**
+- **[PR #20: Hugging Face Hub MCP Tools (Models, Datasets, Spaces)](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/20)**
+- **[PR #21: Direct Kaggle Cloud Dual-T4 GPU/TPU Experiment Execution](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/21)**
+
+---
+
+## 🚀 Running Verification & Simulation
 
 ### 1. Run Unit Tests (8 Passing Tests)
 ```bash
@@ -92,26 +122,3 @@ flowchart TD
 ```bash
 PYTHONPATH=. .venv/bin/python run_end_to_end_simulation.py
 ```
-
----
-
-## 🔍 Qodo Code Review Evidence
-
-In accordance with hackathon engineering best practices, every substantive feature was developed through branch-based Pull Requests reviewed by **Qodo** before merge:
-
-- **[PR #1: FastMCP Research Lab Server & Verification Suite](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/1)**
-  - *Summary:* Implemented initial FastMCP tools for dataset profiling, plotting, and code validation.
-- **[PR #2: Karpathy-style 3-File AutoResearch Sandbox Environment](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/2)**
-  - *Summary:* Prototyped initial benchmark sandbox environment.
-- **[PR #3: TrueForge Agent Skills, Subagent Hierarchy, and Approval Gates](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/3)**
-  - *Summary:* Configured subagent hierarchy and defined approval gates in `trueforge_config/agent.yaml`.
-- **[PR #4: Guided Autonomy Parent Manager and 4-Subagent Hierarchy](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/4)**
-  - *Summary:* Full refactor to Guided Autonomy: Parent `research-manager`, contracted subagents, integrated arXiv tool, and Level-2 rigor auditor.
-- **[PR #5: Fix MCP Server based on Qodo Review Findings](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/5)**
-  - *Summary:* Resolved all issues surfaced by Qodo: upgraded arXiv API to HTTPS transport, enforced strict metric column validation in plotting, and added LaTeX character escaping.
-- **[PR #6: Add Dedicated Modular FastMCP Servers for arXiv, Scholar, Kaggle/Colab, and LaTeX](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/6)**
-  - *Summary:* Decomposed research tooling into 5 dedicated FastMCP servers with 8 comprehensive unit tests.
-- **[PR #7: Integrate Official Orchestra Research AI-research-SKILLs Packages](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/7)**
-  - *Summary:* Integrated official skill packages directly into TrueForge agents.
-- **[PR #8: 1-Command Auto-Registration Launcher for TrueForge](https://github.com/Its-Atharva-Gupta/forge-researcher/pull/8)**
-  - *Summary:* Added `./start.sh`, `launch_mcp_streamable_gateway.py`, and `register_with_trueforge.py` for automated zero-config setup.
