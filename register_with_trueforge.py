@@ -1,8 +1,6 @@
 """
 1-Command Auto-Registration for TrueForge
-Configures TrueForge with:
-1. `forge-researcher-tools` MCP Server (HTTP/SSE on port 8795)
-2. `forge-researcher` Autonomous Agent
+Registers `forge-researcher-tools` with `preload: true` so all research tools are directly accessible.
 """
 import os
 import json
@@ -28,7 +26,7 @@ def make_request(endpoint, method="GET", data=None):
 
 def setup():
     print("=" * 60)
-    print("⚡ AUTO-CONFIGURING TRUEFORGE HARNESS FOR FORGERESEARCHER")
+    print("⚡ CONFIGURING TRUEFORGE AGENT WITH PRELOADED MCP TOOLS")
     print("=" * 60)
 
     # 1. Connect
@@ -36,7 +34,6 @@ def setup():
     mcp_check = make_request("/settings/mcp-servers")
     if "error" in mcp_check:
         print(f"  ❌ Cannot connect to TrueForge: {mcp_check['error']}")
-        print("  👉 Make sure TrueForge is running: `npx @truefoundry/trueforge`")
         return False
     print("  ✓ Connected successfully to TrueForge runtime.")
 
@@ -46,8 +43,8 @@ def setup():
         "manifest": {
             "type": "remote",
             "name": "forge-researcher-tools",
-            "url": "http://localhost:8795/sse",
-            "description": "Complete research toolkit: arXiv, Scholar, Kaggle datasets, plotting, LaTeX drafting, and Level-2 rigor audit."
+            "url": "http://127.0.0.1:8795/sse",
+            "description": "Complete research toolkit: arXiv, Scholar, Kaggle/OpenML datasets, plotting, LaTeX drafting, and Level-2 rigor audit."
         }
     }
     mcp_res = make_request("/settings/mcp-servers", method="PUT", data=mcp_payload)
@@ -66,7 +63,7 @@ def setup():
         if models:
             model_name = f"{prov_name}/{models[0].get('name')}"
 
-    print(f"\n[3/3] Registering 'forge-researcher' Agent in TrueForge (using model: {model_name})...")
+    print(f"\n[3/3] Registering 'forge-researcher' Agent (with eager tool preloading)...")
     
     agent_payload = {
         "name": "forge-researcher",
@@ -79,18 +76,20 @@ def setup():
                 "You are 'forge-researcher', an autonomous empirical ML research harness.\n\n"
                 "YOUR WORKFLOW:\n"
                 "1. When given a research goal, use `search_arxiv_papers` and `search_academic_citations` to pull real literature.\n"
-                "2. Formulate an empirical hypothesis matrix (3 trials) and compute budget.\n"
-                "3. APPROVAL GATE #1: Pause and ask user for explicit approval before running compute.\n"
-                "4. Once approved, write custom Python experiment scripts in `workspace/` and execute them in the sandbox.\n"
-                "5. Emit `workspace/results.tsv` and call `generate_academic_figures` to produce publication charts.\n"
-                "6. Call `compile_latex_paper` to compile `workspace/paper.tex`.\n"
-                "7. Call `verify_scientific_claims_audit` to perform Level-2 fact-checking against raw logs.\n"
-                "8. APPROVAL GATE #2: Pause and ask user for approval before exporting the final PDF manuscript."
+                "2. When asked about datasets or Kaggle access, use `discover_open_datasets` and `inspect_compute_environment`.\n"
+                "3. Formulate an empirical hypothesis matrix (3 trials) and compute budget.\n"
+                "4. APPROVAL GATE #1: Pause and ask user for explicit approval before running compute.\n"
+                "5. Once approved, write custom Python experiment scripts in `workspace/` and execute them in the sandbox.\n"
+                "6. Emit `workspace/results.tsv` and call `generate_academic_figures` to produce publication charts.\n"
+                "7. Call `compile_latex_paper` to compile `workspace/paper.tex`.\n"
+                "8. Call `verify_scientific_claims_audit` to perform Level-2 fact-checking against raw logs.\n"
+                "9. APPROVAL GATE #2: Pause and ask user for approval before exporting the final PDF manuscript."
             ),
             "mcp_servers": [
                 {
                     "name": "forge-researcher-tools",
                     "enable_tools": ["@all"],
+                    "preload": True,
                     "require_approval_for_tools": []
                 }
             ],
@@ -124,11 +123,11 @@ def setup():
     if "error" in agent_res:
         print(f"  ❌ Error creating agent: {agent_res['error']}")
     else:
-        print("  ✓ Created agent: forge-researcher")
+        print("  ✓ Created agent 'forge-researcher' with preload: true!")
 
     print("\n" + "=" * 60)
-    print("🎉 SUCCESS! ForgeResearcher is now live on TrueForge!")
-    print("👉 Open http://localhost:8790, select 'forge-researcher', and start researching!")
+    print("🎉 SUCCESS! ForgeResearcher is updated with direct tool preloading.")
+    print("👉 Open http://localhost:8790, start a NEW chat session with 'forge-researcher'!")
     print("=" * 60)
 
 if __name__ == "__main__":
