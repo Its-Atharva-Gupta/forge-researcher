@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "ResearchLabServer": {
+      "command": ".venv/bin/python",
+      "args": ["mcp_servers/research_lab_mcp/server.py"],
+      "env": {}
+    }
+  }
+}
