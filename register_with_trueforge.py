@@ -1,5 +1,5 @@
 """
-Auto-Register ForgeResearcher with Hugging Face, Kaggle, Colab & Research Tools
+Auto-Register ForgeResearcher with Direct Kaggle GPU Cloud Compute & Research Tools
 """
 import os
 import json
@@ -28,7 +28,7 @@ def make_request(endpoint, method="GET", data=None):
 
 def setup():
     print("=" * 60)
-    print("⚡ CONFIGURING TRUEFORGE WITH HUGGING FACE, KAGGLE & RESEARCH SUITE")
+    print("⚡ CONFIGURING TRUEFORGE WITH DIRECT KAGGLE CLOUD GPU EXECUTION")
     print("=" * 60)
 
     # 1. Connect
@@ -37,13 +37,13 @@ def setup():
         print(f"  ❌ Cannot connect to TrueForge: {mcp_check['error']}")
         return False
 
-    # 2. Register Authenticated Remote Kaggle MCP Server
+    # 2. Register Authenticated Remote Kaggle MCP Server (for datasets & competitions)
     kaggle_payload = {
         "manifest": {
             "type": "remote",
             "name": "kaggle",
             "url": "https://www.kaggle.com/mcp",
-            "description": "Official Kaggle MCP Server: Search/download datasets, run/manage notebooks & GPU kernels, competitions, and models.",
+            "description": "Official Kaggle MCP Server: Search/download datasets, competitions, and models.",
             "auth": {
                 "type": "header",
                 "headers": {
@@ -54,13 +54,13 @@ def setup():
     }
     make_request("/settings/mcp-servers", method="PUT", data=kaggle_payload)
 
-    # 3. Register local Research & Hugging Face Tools
+    # 3. Register local FastMCP Tool Gateway (Kaggle Cloud GPU Dispatcher + Research Suite)
     tools_payload = {
         "manifest": {
             "type": "remote",
             "name": "forge-researcher-tools",
             "url": "http://127.0.0.1:8795/sse",
-            "description": "Research toolkit: Hugging Face (Models/Datasets/Spaces), Google Colab, arXiv search, academic citations, plotting, LaTeX compilation, and Level-2 rigor auditor."
+            "description": "Kaggle GPU Dispatcher (NVIDIA T4 Dual-GPU), Hugging Face, arXiv, Plotting, LaTeX compiler, and Level-2 rigor auditor."
         }
     }
     make_request("/settings/mcp-servers", method="PUT", data=tools_payload)
@@ -75,33 +75,27 @@ def setup():
         if models:
             model_name = f"{prov_name}/{models[0].get('name')}"
 
-    print(f"\nRegistering 'forge-researcher' Agent with Hugging Face & Research tools...")
+    print(f"\nRegistering 'forge-researcher' Agent with Kaggle Cloud GPU Compute...")
     
     agent_instructions = (
         "You are 'forge-researcher', an autonomous empirical ML research harness operating under GUIDED AUTONOMY.\n\n"
-        f"AUTHENTICATED KAGGLE USER: {KAGGLE_USER}\n\n"
-        "## ATTACHED TOOLSETS:\n"
-        "1. **Hugging Face Hub Tools**:\n"
-        "   - `search_huggingface_models`: Discover pretrained models, checkpoints, and weights.\n"
-        "   - `search_huggingface_datasets`: Discover NLP, CV, tabular, and speech datasets.\n"
-        "   - `search_huggingface_spaces`: Discover live Hugging Face Gradio/Streamlit spaces.\n"
-        "2. **Google Colab & Compute Tools**:\n"
-        "   - `open_google_colab_session`: Launch interactive browser Colab sessions with GPU/TPU.\n"
-        "   - `inspect_colab_and_kaggle_compute`: Profile available remote compute tiers.\n"
-        "3. **Literature & Citation Tools**:\n"
-        "   - `search_arxiv`: Search arXiv papers over HTTPS.\n"
-        "   - `search_semantic_scholar`: Query CrossRef & Semantic Scholar academic citations.\n"
-        "4. **Lab & Rigor Tools**:\n"
-        "   - `profile_dataset` & `generate_publication_plots`\n"
-        "   - `render_latex_manuscript` & `audit_scientific_claims`\n\n"
+        f"AUTHENTICATED KAGGLE USER: {KAGGLE_USER} (Cloud GPU Execution ENABLED)\n\n"
+        "## KAGGLE REMOTE CLOUD GPU DISPATCH (Use this whenever the user wants GPU compute!):\n"
+        "- `run_experiment_on_kaggle_gpu`: Pushes and runs your experiment code directly on remote Kaggle cloud NVIDIA T4 Dual-GPUs / TPUs. Returns the live Kaggle notebook URL.\n"
+        "- `get_kaggle_experiment_logs`: Fetches execution logs, loss numbers, and artifact files from the running Kaggle GPU kernel.\n"
+        "- `inspect_kaggle_and_local_compute`: Checks your Kaggle GPU quotas and hardware specs.\n\n"
+        "## OTHER ATTACHED TOOLSETS:\n"
+        "- Hugging Face: `search_huggingface_models`, `search_huggingface_datasets`, `search_huggingface_spaces`.\n"
+        "- Literature: `search_arxiv` (arXiv HTTPS query) and `search_semantic_scholar`.\n"
+        "- Lab & Paper: `profile_dataset`, `generate_publication_plots`, `render_latex_manuscript`, and `audit_scientific_claims`.\n\n"
         "## GUIDED AUTONOMY SUBAGENTS (Orchestrated via `create_sub_agent`):\n"
-        "- `eval-worker`: Sandbox code execution & benchmark evaluation (emits `results.tsv`).\n"
+        "- `eval-worker`: Dispatches experiments to Kaggle Cloud GPU via `run_experiment_on_kaggle_gpu` or executes in local sandbox.\n"
         "- `plot-worker`: Publication plotting (emits `figures/`).\n"
         "- `write-worker`: LaTeX paper synthesis (emits `paper.tex`).\n"
         "- `rigor-worker`: Level-2 empirical fact-checker (emits `rigor_audit.json`).\n\n"
         "## APPROVAL GATES:\n"
-        "- APPROVAL GATE #1: Propose hypothesis matrix & compute budget, then pause for user approval before execution.\n"
-        "- APPROVAL GATE #2: Present Level-2 audit results and pause for user approval before finalizing manuscript."
+        "- APPROVAL GATE #1: Formulate 3-trial hypothesis matrix & compute budget, then pause for user approval before GPU dispatch.\n"
+        "- APPROVAL GATE #2: Present Level-2 audit results and pause for user approval before finalizing PDF manuscript."
     )
 
     agent_payload = {
@@ -145,10 +139,10 @@ def setup():
     if "error" in agent_res:
         print(f"  ❌ Error creating agent: {agent_res['error']}")
     else:
-        print("  ✓ Created agent 'forge-researcher' with Hugging Face integration!")
+        print("  ✓ Created agent 'forge-researcher' with Kaggle Cloud GPU execution!")
 
     print("\n" + "=" * 60)
-    print("🎉 HUGGING FACE & RESEARCH SUITE ARE READY!")
+    print("🎉 KAGGLE CLOUD GPU EXECUTION IS FULLY CONFIGURED!")
     print("=" * 60)
 
 if __name__ == "__main__":
