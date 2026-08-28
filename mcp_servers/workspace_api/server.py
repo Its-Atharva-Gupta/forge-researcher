@@ -1,8 +1,7 @@
 """
-Workspace Explorer & Telemetry API for ForgeResearcher Studio UI
-Serves real-time files, images (Base64), and Kaggle execution logs from workspace/
+Workspace Explorer, Literature Feed & Telemetry API for ForgeResearcher Studio UI
 """
-from fastapi import FastAPI, Response
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import json
@@ -10,7 +9,7 @@ import base64
 import uvicorn
 from kaggle.api.kaggle_api_extended import KaggleApi
 
-app = FastAPI(title="ForgeResearcher Workspace API")
+app = FastAPI(title="ForgeResearcher Workspace & Literature API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -22,6 +21,19 @@ app.add_middleware(
 
 WORKSPACE_DIR = os.path.abspath("workspace")
 CACHE_FILE = "/tmp/kaggle_telemetry/latest_run.json"
+LITERATURE_FILE = "/tmp/forge_literature/papers.json"
+
+@app.get("/api/literature/papers")
+def list_researched_papers():
+    """Lists papers and citations discovered and read by the agent via arXiv & Semantic Scholar."""
+    if os.path.exists(LITERATURE_FILE):
+        try:
+            with open(LITERATURE_FILE, "r") as f:
+                papers = json.load(f)
+            return {"papers": papers, "total": len(papers)}
+        except Exception:
+            pass
+    return {"papers": [], "total": 0}
 
 @app.get("/api/workspace/files")
 def list_workspace_files():

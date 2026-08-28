@@ -15,19 +15,24 @@ import {
   RefreshCw,
   Cpu,
   Inbox,
-  Image as ImageIcon
+  Image as ImageIcon,
+  BookOpen,
+  Calendar,
+  UserCheck
 } from 'lucide-react';
 
 export default function App() {
-  const [liveArtifact, setLiveArtifact] = useState('workspace');
+  const [liveArtifact, setLiveArtifact] = useState('literature');
   const [workspaceFiles, setWorkspaceFiles] = useState([]);
+  const [papers, setPapers] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileData, setFileData] = useState({ is_image: false, content: "" });
   const [kaggleData, setKaggleData] = useState({ active: false, log: "", message: "Awaiting first GPU experiment dispatch..." });
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const fetchWorkspace = async () => {
+  const fetchWorkspaceAndLiterature = async () => {
     setIsRefreshing(true);
+    // 1. Files
     try {
       const res = await fetch('http://localhost:8796/api/workspace/files');
       const data = await res.json();
@@ -39,6 +44,16 @@ export default function App() {
       setWorkspaceFiles([]);
     }
 
+    // 2. Papers Discovered via arXiv & Semantic Scholar
+    try {
+      const paperRes = await fetch('http://localhost:8796/api/literature/papers');
+      const paperData = await paperRes.json();
+      setPapers(paperData.papers || []);
+    } catch (e) {
+      setPapers([]);
+    }
+
+    // 3. Kaggle Logs
     try {
       const logRes = await fetch('http://localhost:8796/api/kaggle/latest-logs');
       const logData = await logRes.json();
@@ -64,32 +79,15 @@ export default function App() {
   };
 
   useEffect(() => {
-    fetchWorkspace();
-    const interval = setInterval(fetchWorkspace, 3000);
+    fetchWorkspaceAndLiterature();
+    const interval = setInterval(fetchWorkspaceAndLiterature, 3000);
     return () => clearInterval(interval);
   }, []);
-
-  const subagents = [
-    { name: "research-manager", role: "Parent Autonomy Orchestrator", status: "Active", tag: "Orchestration", color: "#8b5cf6" },
-    { name: "eval-worker", role: "Kaggle GPU Dispatcher & Sandbox", status: "Ready", tag: "Compute", color: "#3b82f6" },
-    { name: "plot-worker", role: "Dual-Axis Academic Plotting", status: "Ready", tag: "Visualization", color: "#10b981" },
-    { name: "write-worker", role: "LaTeX Conference Synthesis", status: "Ready", tag: "Writing", color: "#f59e0b" },
-    { name: "rigor-worker", role: "Level-2 Empirical Fact-Checker", status: "Ready", tag: "Audit", color: "#ec4899" },
-  ];
-
-  const pipelineStages = [
-    { id: 1, title: "1. Literature & HF Discovery", desc: "arXiv HTTPS & Hugging Face Hub search", tool: "search_arxiv, search_huggingface_models" },
-    { id: 2, title: "2. Hypothesis Matrix & Budget", desc: "3-trial matrix formulation & GPU compute sizing", tool: "inspect_kaggle_and_local_compute" },
-    { id: 3, title: "3. Approval Gate #1", desc: "Explicit user authorization before GPU execution", tool: "ask_user_questions" },
-    { id: 4, title: "4. Kaggle Cloud GPU Execution", desc: "Dispatched to remote NVIDIA Tesla P100 / Dual-T4", tool: "run_experiment_on_kaggle_gpu" },
-    { id: 5, title: "5. Dual-Axis Plotting & LaTeX", desc: "Generates loss curves & 2-column paper.tex", tool: "generate_publication_plots, render_latex_manuscript" },
-    { id: 6, title: "6. Level-2 Rigor Fact-Check & Gate #2", desc: "Validates all claims vs raw results.tsv", tool: "audit_scientific_claims" }
-  ];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', backgroundColor: '#07080c', color: '#f1f5f9', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
       
-      {/* 🌟 Top Navigation: Hardware Telemetry */}
+      {/* 🌟 Top Navigation: Live Hardware & Service Telemetry */}
       <header style={{ height: '56px', borderBottom: '1px solid rgba(255,255,255,0.08)', backgroundColor: 'rgba(15,17,26,0.85)', backdropFilter: 'blur(16px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', zIndex: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ height: '34px', width: '34px', borderRadius: '8px', background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(124,58,237,0.3)' }}>
@@ -104,6 +102,7 @@ export default function App() {
           </div>
         </div>
 
+        {/* Telemetry Badges */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 12px', borderRadius: '20px', backgroundColor: 'rgba(24,27,41,0.6)', border: '1px solid rgba(255,255,255,0.08)', fontSize: '12px' }}>
             <span style={{ height: '8px', width: '8px', borderRadius: '50%', backgroundColor: '#10b981', display: 'inline-block' }}></span>
@@ -118,9 +117,9 @@ export default function App() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 12px', borderRadius: '20px', backgroundColor: 'rgba(24,27,41,0.6)', border: '1px solid rgba(255,255,255,0.08)', fontSize: '12px' }}>
-            <ShieldCheck style={{ height: '14px', width: '14px', color: '#c084fc' }} />
-            <span style={{ color: '#94a3b8' }}>Level-2 Fact-Check:</span>
-            <span style={{ color: '#c084fc', fontFamily: 'monospace', fontWeight: '600' }}>Active</span>
+            <BookOpen style={{ height: '14px', width: '14px', color: '#fbbf24' }} />
+            <span style={{ color: '#94a3b8' }}>arXiv / Scholar:</span>
+            <span style={{ color: '#fbbf24', fontFamily: 'monospace', fontWeight: '600' }}>{papers.length} Papers Read</span>
           </div>
 
           <a href="http://localhost:8790" target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#c4b5fd', padding: '6px 12px', borderRadius: '6px', backgroundColor: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)', textDecoration: 'none' }}>
@@ -133,53 +132,6 @@ export default function App() {
       {/* 🚀 Main Split-Screen Workspace */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         
-        {/* 🧭 Left Panel: Subagent Registry & Stepper */}
-        <aside style={{ width: '280px', borderRight: '1px solid rgba(255,255,255,0.08)', backgroundColor: 'rgba(15,17,26,0.7)', padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Layers style={{ height: '14px', width: '14px', color: '#a78bfa' }} />
-                Guided Autonomy Hierarchy
-              </span>
-              <span style={{ fontSize: '10px', fontFamily: 'monospace', padding: '2px 6px', borderRadius: '4px', backgroundColor: 'rgba(255,255,255,0.05)', color: '#94a3b8' }}>5 Agents</span>
-            </div>
-            <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>Contract-bounded subagents coordinated by parent manager.</p>
-          </div>
-
-          {/* Subagent Cards */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {subagents.map((agent, i) => (
-              <div key={i} style={{ padding: '10px', borderRadius: '8px', backgroundColor: 'rgba(24,27,41,0.6)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                  <span style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: '600', color: '#e2e8f0' }}>{agent.name}</span>
-                  <span style={{ fontSize: '10px', fontFamily: 'monospace', padding: '2px 6px', borderRadius: '4px', color: agent.color, backgroundColor: `${agent.color}15`, border: `1px solid ${agent.color}30` }}>{agent.tag}</span>
-                </div>
-                <p style={{ fontSize: '11px', color: '#94a3b8', margin: 0 }}>{agent.role}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Stepper */}
-          <div style={{ paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-            <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
-              <Sparkles style={{ height: '14px', width: '14px', color: '#fbbf24' }} />
-              Research Lifecycle Stages
-            </span>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {pipelineStages.map((stage) => (
-                <div key={stage.id} style={{ padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', backgroundColor: 'rgba(255,255,255,0.02)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600', fontSize: '12px', color: '#f1f5f9', marginBottom: '2px' }}>
-                    <CheckCircle2 style={{ height: '14px', width: '14px', color: '#475569' }} />
-                    <span>{stage.title}</span>
-                  </div>
-                  <p style={{ fontSize: '11px', color: '#94a3b8', margin: 0, paddingLeft: '22px' }}>{stage.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </aside>
-
         {/* 💬 Center Panel: TRUE LIVE TrueForge Backend WebSocket Chat Container */}
         <main style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#090a0f', position: 'relative' }}>
           <iframe 
@@ -189,28 +141,113 @@ export default function App() {
           />
         </main>
 
-        {/* 📊 Right Panel: Real-Time Live Workspace Explorer & GPU Stream */}
-        <aside style={{ width: '460px', borderLeft: '1px solid rgba(255,255,255,0.08)', backgroundColor: 'rgba(15,17,26,0.85)', display: 'flex', flexDirection: 'column' }}>
+        {/* 📊 Right Panel: Researched Literature Feed, Workspace Explorer & GPU Stream */}
+        <aside style={{ width: '520px', borderLeft: '1px solid rgba(255,255,255,0.08)', backgroundColor: 'rgba(15,17,26,0.92)', display: 'flex', flexDirection: 'column' }}>
           
           {/* Tab Navigation */}
           <div style={{ height: '48px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-around', padding: '0 8px', backgroundColor: '#0c0e17' }}>
             <button 
-              onClick={() => setLiveArtifact('workspace')} 
-              style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', backgroundColor: liveArtifact === 'workspace' ? '#7c3aed' : 'transparent', color: liveArtifact === 'workspace' ? '#fff' : '#94a3b8', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+              onClick={() => setLiveArtifact('literature')} 
+              style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', backgroundColor: liveArtifact === 'literature' ? '#7c3aed' : 'transparent', color: liveArtifact === 'literature' ? '#fff' : '#94a3b8', fontSize: '12px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
             >
-              <FolderTree style={{ height: '13px', width: '13px' }} />
+              <BookOpen style={{ height: '14px', width: '14px' }} />
+              <span>Researched Papers ({papers.length})</span>
+            </button>
+            <button 
+              onClick={() => setLiveArtifact('workspace')} 
+              style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', backgroundColor: liveArtifact === 'workspace' ? '#7c3aed' : 'transparent', color: liveArtifact === 'workspace' ? '#fff' : '#94a3b8', fontSize: '12px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <FolderTree style={{ height: '14px', width: '14px' }} />
               <span>Workspace Files ({workspaceFiles.length})</span>
             </button>
             <button 
               onClick={() => setLiveArtifact('logs')} 
-              style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', backgroundColor: liveArtifact === 'logs' ? '#7c3aed' : 'transparent', color: liveArtifact === 'logs' ? '#fff' : '#94a3b8', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+              style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', backgroundColor: liveArtifact === 'logs' ? '#7c3aed' : 'transparent', color: liveArtifact === 'logs' ? '#fff' : '#94a3b8', fontSize: '12px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
             >
-              <Terminal style={{ height: '13px', width: '13px' }} />
+              <Terminal style={{ height: '14px', width: '14px' }} />
               <span>Kaggle GPU Logs</span>
             </button>
           </div>
 
-          {/* Real-time Workspace View with Image Preview Support */}
+          {/* TAB 1: Real Researched Literature Feed (arXiv & Semantic Scholar) */}
+          {liveArtifact === 'literature' && (
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', backgroundColor: '#10131f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <BookOpen style={{ height: '14px', width: '14px', color: '#fbbf24' }} />
+                  <span style={{ fontSize: '11px', fontWeight: '600', color: '#e2e8f0' }}>Literature & Citations Discovered</span>
+                </div>
+                <button onClick={fetchWorkspaceAndLiterature} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px' }}>
+                  <RefreshCw style={{ height: '11px', width: '11px', animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} />
+                  <span>Sync</span>
+                </button>
+              </div>
+
+              <div style={{ flex: 1, padding: '14px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {papers.length === 0 ? (
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', textAlign: 'center', gap: '12px' }}>
+                    <div style={{ height: '48px', width: '48px', borderRadius: '14px', backgroundColor: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <BookOpen style={{ height: '22px', width: '22px', color: '#fbbf24' }} />
+                    </div>
+                    <div>
+                      <h4 style={{ fontSize: '12px', fontWeight: '700', color: '#f1f5f9', margin: '0 0 4px 0' }}>No literature queried yet</h4>
+                      <p style={{ fontSize: '11px', color: '#94a3b8', lineHeight: '1.5', margin: 0, maxWidth: '280px' }}>
+                        When your agent searches for papers using <code>search_arxiv</code> or <code>search_semantic_scholar</code>, they will appear here with title, authors, abstract, and PDF links!
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  papers.map((paper, idx) => (
+                    <div key={idx} style={{ padding: '14px', borderRadius: '10px', backgroundColor: 'rgba(24,27,41,0.7)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
+                        <h4 style={{ fontSize: '12px', fontWeight: '700', color: '#f8fafc', lineHeight: '1.4', margin: 0 }}>
+                          {paper.title}
+                        </h4>
+                        <span style={{ fontSize: '9px', fontFamily: 'monospace', padding: '2px 6px', borderRadius: '4px', backgroundColor: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)', whiteSpace: 'nowrap' }}>
+                          {paper.source}
+                        </span>
+                      </div>
+
+                      {/* Authors & Published Date */}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', fontSize: '10px', color: '#94a3b8' }}>
+                        {paper.authors && paper.authors.length > 0 && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <UserCheck style={{ height: '12px', width: '12px', color: '#a78bfa' }} />
+                            <span>{paper.authors.slice(0, 3).join(', ')}{paper.authors.length > 3 ? ' et al.' : ''}</span>
+                          </div>
+                        )}
+                        {paper.published && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Calendar style={{ height: '12px', width: '12px', color: '#60a5fa' }} />
+                            <span>{paper.published.split('T')[0]}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Summary Abstract */}
+                      {paper.summary && (
+                        <p style={{ fontSize: '11px', color: '#cbd5e1', lineHeight: '1.5', margin: 0, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          {paper.summary}
+                        </p>
+                      )}
+
+                      {/* URL Link */}
+                      {paper.url && (
+                        <div style={{ marginTop: '2px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '6px' }}>
+                          <a href={paper.url} target="_blank" rel="noreferrer" style={{ fontSize: '10px', fontFamily: 'monospace', color: '#a78bfa', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span>Read Full Manuscript / PDF</span>
+                            <ExternalLink style={{ height: '10px', width: '10px' }} />
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: Workspace Files */}
           {liveArtifact === 'workspace' && (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', backgroundColor: '#10131f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -218,7 +255,7 @@ export default function App() {
                   <FolderTree style={{ height: '14px', width: '14px', color: '#60a5fa' }} />
                   <span style={{ fontSize: '11px', fontWeight: '600', color: '#e2e8f0' }}>workspace/ directory</span>
                 </div>
-                <button onClick={fetchWorkspace} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px' }}>
+                <button onClick={fetchWorkspaceAndLiterature} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px' }}>
                   <RefreshCw style={{ height: '11px', width: '11px', animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} />
                   <span>Sync</span>
                 </button>
@@ -295,7 +332,7 @@ export default function App() {
             </div>
           )}
 
-          {/* Kaggle Logs View */}
+          {/* TAB 3: Kaggle GPU Logs */}
           {liveArtifact === 'logs' && (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', backgroundColor: '#10131f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
