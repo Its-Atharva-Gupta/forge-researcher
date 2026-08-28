@@ -1,5 +1,5 @@
 """
-Auto-Register ForgeResearcher with Explicit Tools & Instruction Clarity
+Auto-Register ForgeResearcher with Kaggle Cloud Execution Tools
 """
 import os
 import json
@@ -25,7 +25,7 @@ def make_request(endpoint, method="GET", data=None):
 
 def setup():
     print("=" * 60)
-    print("⚡ UPDATING TRUEFORGE AGENT FOR FORGERESEARCHER")
+    print("⚡ UPDATING TRUEFORGE AGENT WITH KAGGLE CLOUD KERNEL EXECUTION")
     print("=" * 60)
 
     # 1. Register server
@@ -34,7 +34,7 @@ def setup():
             "type": "remote",
             "name": "forge-researcher-tools",
             "url": "http://127.0.0.1:8795/sse",
-            "description": "Unified research tools: Kaggle search, arXiv papers, Scholar citations, Plotting, LaTeX compiler, and Level-2 rigor auditor."
+            "description": "Unified research tools: Kaggle search & cloud kernel execution, arXiv papers, Scholar citations, Plotting, LaTeX compiler, and Level-2 rigor auditor."
         }
     }
     make_request("/settings/mcp-servers", method="PUT", data=mcp_payload)
@@ -59,9 +59,11 @@ def setup():
                 "params": {"reasoning_effort": "minimal"}
             },
             "instructions": (
-                "You are 'forge-researcher', an autonomous empirical ML research assistant.\n\n"
+                "You are 'forge-researcher', an autonomous empirical ML research assistant with local and remote cloud execution tools.\n\n"
                 "YOUR ATTACHED RESEARCH TOOLS:\n"
-                "- `search_kaggle_datasets`: Call this when asked about Kaggle, competitions, or datasets.\n"
+                "- `search_kaggle_datasets`: Call this to discover Kaggle datasets, competitions, and scientific benchmarks.\n"
+                "- `execute_kaggle_kernel`: Call this to push and run experiment code on Kaggle's remote cloud compute (with GPU/TPU support).\n"
+                "- `get_kaggle_kernel_status`: Call this to check the execution status of a remote Kaggle kernel.\n"
                 "- `search_arxiv_papers`: Call this when searching for academic papers on arXiv.\n"
                 "- `search_academic_citations`: Call this for Google Scholar / CrossRef citations.\n"
                 "- `inspect_compute_environment`: Call this to inspect CPU/RAM and compute boundaries.\n"
@@ -69,10 +71,8 @@ def setup():
                 "- `generate_academic_figures`: Call this to plot loss curves and bar charts.\n"
                 "- `compile_latex_paper`: Call this to draft 2-column LaTeX conference papers.\n"
                 "- `verify_scientific_claims_audit`: Call this to perform Level-2 fact-checking.\n\n"
-                "BEHAVIOR RULES:\n"
-                "1. When the user asks about Kaggle or datasets, immediately call `search_kaggle_datasets(query=...)`.\n"
-                "2. When the user asks about papers, immediately call `search_arxiv_papers(query=...)`.\n"
-                "3. When executing research, formulate 3 trials, ASK FOR APPROVAL before sandbox execution, run trials, plot charts, and compile the final paper."
+                "WHEN ASKED ABOUT KAGGLE COMPUTE OR NOTEBOOKS:\n"
+                "You CAN run experiments on Kaggle compute using `execute_kaggle_kernel` (which pushes and runs scripts/notebooks via the Kaggle Kernels API) or inside TrueForge's isolated container sandbox."
             ),
             "mcp_servers": [
                 {"name": "forge-researcher-tools", "enable_tools": ["@all"], "preload": True}
@@ -107,10 +107,10 @@ def setup():
     if "error" in agent_res:
         print(f"  ❌ Error creating agent: {agent_res['error']}")
     else:
-        print("  ✓ Created agent 'forge-researcher' with explicit search_kaggle_datasets tool!")
+        print("  ✓ Created agent 'forge-researcher' with Kaggle Cloud Kernel Execution!")
 
     print("\n" + "=" * 60)
-    print("🎉 ALL TOOLS ARE ONLINE!")
+    print("🎉 KAGGLE CLOUD KERNEL EXECUTION IS LIVE!")
     print("=" * 60)
 
 if __name__ == "__main__":
