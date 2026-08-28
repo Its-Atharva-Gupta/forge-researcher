@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { 
-  Cpu, 
   FlaskConical, 
   FileText, 
   CheckCircle2, 
@@ -9,29 +8,11 @@ import {
   BarChart3, 
   ShieldCheck, 
   ExternalLink,
-  Send,
-  Bot,
-  User,
-  Database,
-  Terminal,
-  Play,
-  Check,
-  AlertCircle
+  Database
 } from 'lucide-react';
 
 export default function App() {
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      role: 'assistant',
-      text: "👋 Welcome to **ForgeResearcher Studio**!\n\nI am your autonomous empirical ML research assistant operating with **Guided Autonomy**.\n\nI have direct access to:\n- 🚀 **Kaggle Cloud GPUs** (NVIDIA Tesla P100 / Dual-T4 via `run_experiment_on_kaggle_gpu`)\n- 🤗 **Hugging Face Hub** (`search_huggingface_models`, `search_huggingface_datasets`)\n- 📖 **arXiv HTTPS & CrossRef** literature indices\n- 🛡️ **Level-2 Scientific Rigor Fact-Checker**\n\nWhat research question or benchmark would you like to investigate today?"
-    }
-  ]);
-  const [inputValue, setInputValue] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [liveArtifact, setLiveArtifact] = useState('charts');
-  const [activeStep, setActiveStep] = useState(1);
-  const chatBottomRef = useRef(null);
 
   const subagents = [
     { name: "research-manager", role: "Parent Autonomy Orchestrator", status: "Active", tag: "Orchestration", color: "#8b5cf6" },
@@ -49,38 +30,6 @@ export default function App() {
     { id: 5, title: "5. Dual-Axis Plotting & LaTeX", desc: "Generates loss curves & 2-column paper.tex", tool: "generate_publication_plots, render_latex_manuscript" },
     { id: 6, title: "6. Level-2 Rigor Fact-Check & Gate #2", desc: "Validates all claims vs raw results.tsv", tool: "audit_scientific_claims" }
   ];
-
-  const handleSendMessage = async (e) => {
-    e?.preventDefault();
-    if (!inputValue.trim() || isLoading) return;
-
-    const userText = inputValue;
-    setInputValue('');
-    setMessages(prev => [...prev, { id: Date.now(), role: 'user', text: userText }]);
-    setIsLoading(true);
-
-    try {
-      // Simulate real research agent responses & artifact updates
-      setTimeout(() => {
-        setMessages(prev => [
-          ...prev, 
-          {
-            id: Date.now() + 1,
-            role: 'assistant',
-            text: `Initiating research investigation for: **"${userText}"**\n\n🔍 **Step 1: Literature Search**\n- Searched arXiv: found *DeepSeekMath: Pushing the Limits of Mathematical Reasoning (GRPO)* and *TabPFN: Prior-Data Fitted Networks*.\n- Searched Hugging Face: loaded dataset and model metadata.\n\n🧪 **Step 2: Formulating Hypothesis Matrix**\n- Trial 1: Baseline CNN (Adam, lr=1e-3, batch=128)\n- Trial 2: CNN + Data Augmentation (RandomAffine)\n- Trial 3: Deep ResNet-18 Backbone\n\n🔒 **APPROVAL GATE #1**:\nDo you authorize dispatching Trial 1 to Kaggle Cloud Tesla P100 GPU compute?`
-          }
-        ]);
-        setIsLoading(false);
-        setActiveStep(3);
-      }, 1200);
-    } catch (err) {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isLoading]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', backgroundColor: '#07080c', color: '#f1f5f9', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
@@ -130,7 +79,7 @@ export default function App() {
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         
         {/* 🧭 Left Panel: Subagent Registry & Stepper */}
-        <aside style={{ width: '320px', borderRight: '1px solid rgba(255,255,255,0.08)', backgroundColor: 'rgba(15,17,26,0.7)', padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <aside style={{ width: '300px', borderRight: '1px solid rgba(255,255,255,0.08)', backgroundColor: 'rgba(15,17,26,0.7)', padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
               <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -164,9 +113,9 @@ export default function App() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {pipelineStages.map((stage) => (
-                <div key={stage.id} style={{ padding: '10px', borderRadius: '8px', border: stage.id === activeStep ? '1px solid rgba(124,58,237,0.5)' : '1px solid rgba(255,255,255,0.05)', backgroundColor: stage.id === activeStep ? 'rgba(124,58,237,0.1)' : 'rgba(255,255,255,0.02)' }}>
+                <div key={stage.id} style={{ padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', backgroundColor: 'rgba(255,255,255,0.02)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600', fontSize: '12px', color: '#f1f5f9', marginBottom: '2px' }}>
-                    <CheckCircle2 style={{ height: '14px', width: '14px', color: stage.id <= activeStep ? '#34d399' : '#475569' }} />
+                    <CheckCircle2 style={{ height: '14px', width: '14px', color: '#34d399' }} />
                     <span>{stage.title}</span>
                   </div>
                   <p style={{ fontSize: '11px', color: '#94a3b8', margin: 0, paddingLeft: '22px' }}>{stage.desc}</p>
@@ -176,68 +125,17 @@ export default function App() {
           </div>
         </aside>
 
-        {/* 💬 Center Panel: Interactive Chat Canvas */}
+        {/* 💬 Center Panel: TRUE LIVE TrueForge Backend WebSocket Chat Container */}
         <main style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#090a0f', position: 'relative' }}>
-          
-          {/* Chat Messages Viewport */}
-          <div style={{ flex: 1, padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {messages.map((m) => (
-              <div key={m.id} style={{ display: 'flex', gap: '12px', alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
-                {m.role === 'assistant' && (
-                  <div style={{ height: '32px', width: '32px', borderRadius: '8px', backgroundColor: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Bot style={{ height: '18px', width: '18px', color: '#fff' }} />
-                  </div>
-                )}
-
-                <div style={{ padding: '14px 18px', borderRadius: '12px', backgroundColor: m.role === 'user' ? '#1e1b4b' : 'rgba(24,27,41,0.8)', border: m.role === 'user' ? '1px solid rgba(124,58,237,0.4)' : '1px solid rgba(255,255,255,0.08)', color: '#f1f5f9', fontSize: '13px', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
-                  {m.text}
-                </div>
-
-                {m.role === 'user' && (
-                  <div style={{ height: '32px', width: '32px', borderRadius: '8px', backgroundColor: '#334155', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <User style={{ height: '18px', width: '18px', color: '#fff' }} />
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {isLoading && (
-              <div style={{ display: 'flex', gap: '12px', alignSelf: 'flex-start' }}>
-                <div style={{ height: '32px', width: '32px', borderRadius: '8px', backgroundColor: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Bot style={{ height: '18px', width: '18px', color: '#fff' }} />
-                </div>
-                <div style={{ padding: '12px 18px', borderRadius: '12px', backgroundColor: 'rgba(24,27,41,0.8)', border: '1px solid rgba(255,255,255,0.08)', color: '#c4b5fd', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ height: '6px', width: '6px', borderRadius: '50%', backgroundColor: '#a78bfa' }}></span>
-                  <span>Agent orchestrating MCP tool execution...</span>
-                </div>
-              </div>
-            )}
-            <div ref={chatBottomRef} />
-          </div>
-
-          {/* Composer Input Bar */}
-          <div style={{ padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.08)', backgroundColor: '#0f111a' }}>
-            <form onSubmit={handleSendMessage} style={{ display: 'flex', gap: '10px' }}>
-              <input 
-                type="text" 
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Ask a research question, survey papers, or dispatch Kaggle GPU experiments..."
-                style={{ flex: 1, padding: '12px 16px', borderRadius: '8px', backgroundColor: '#181b29', border: '1px solid rgba(255,255,255,0.1)', color: '#f1f5f9', fontSize: '13px', outline: 'none' }}
-              />
-              <button 
-                type="submit"
-                style={{ padding: '0 20px', borderRadius: '8px', backgroundColor: '#7c3aed', color: '#fff', border: 'none', fontWeight: '600', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
-              >
-                <span>Send</span>
-                <Send style={{ height: '14px', width: '14px' }} />
-              </button>
-            </form>
-          </div>
+          <iframe 
+            src="http://localhost:8790" 
+            style={{ width: '100%', height: '100%', border: 'none', backgroundColor: '#090a0f' }}
+            title="TrueForge Live Agent Chat"
+          />
         </main>
 
         {/* 📊 Right Panel: Live Research Studio Artifact & Telemetry Viewer */}
-        <aside style={{ width: '380px', borderLeft: '1px solid rgba(255,255,255,0.08)', backgroundColor: 'rgba(15,17,26,0.7)', display: 'flex', flexDirection: 'column' }}>
+        <aside style={{ width: '360px', borderLeft: '1px solid rgba(255,255,255,0.08)', backgroundColor: 'rgba(15,17,26,0.7)', display: 'flex', flexDirection: 'column' }}>
           
           {/* Tab Selection */}
           <div style={{ height: '48px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-around', padding: '0 8px' }}>
@@ -247,11 +145,11 @@ export default function App() {
             </button>
             <button onClick={() => setLiveArtifact('paper')} style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', backgroundColor: liveArtifact === 'paper' ? '#7c3aed' : 'transparent', color: liveArtifact === 'paper' ? '#fff' : '#94a3b8', fontSize: '12px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <FileText style={{ height: '14px', width: '14px' }} />
-              <span>Paper Preview</span>
+              <span>Paper</span>
             </button>
             <button onClick={() => setLiveArtifact('audit')} style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', backgroundColor: liveArtifact === 'audit' ? '#7c3aed' : 'transparent', color: liveArtifact === 'audit' ? '#fff' : '#94a3b8', fontSize: '12px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <ShieldCheck style={{ height: '14px', width: '14px' }} />
-              <span>Rigor Audit</span>
+              <span>Audit</span>
             </button>
           </div>
 

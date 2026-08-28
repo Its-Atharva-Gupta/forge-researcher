@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@truefoundry/trueforge-sdk": "0.2.4",
+    "@truefoundry/trueforge-ui": "^0.2.4",
     "clsx": "^2.1.1",
     "lucide-react": "^1.16.0",
     "react": "^18.3.1",
