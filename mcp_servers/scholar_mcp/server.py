@@ -5,7 +5,7 @@ from typing import Dict, Any, List
 import urllib.parse
 import urllib.request
 import json
-from mcp.server.mcpserver import MCPServer
+from fastmcp import FastMCP as MCPServer
 
 mcp = MCPServer("ScholarServer")
 

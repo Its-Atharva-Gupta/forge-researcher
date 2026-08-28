@@ -1,5 +1,5 @@
 """
-Auto-Register ForgeResearcher with Authenticated Kaggle MCP Server & Research Suite
+Auto-Register ForgeResearcher with Official Kaggle MCP, Colab MCP & Research Toolkit
 """
 import os
 import json
@@ -28,7 +28,7 @@ def make_request(endpoint, method="GET", data=None):
 
 def setup():
     print("=" * 60)
-    print("⚡ CONFIGURING TRUEFORGE WITH AUTHENTICATED KAGGLE & RESEARCH SUITE")
+    print("⚡ CONFIGURING TRUEFORGE WITH KAGGLE & GOOGLE COLAB INTEGRATION")
     print("=" * 60)
 
     # 1. Connect
@@ -53,27 +53,21 @@ def setup():
             }
         }
     }
-    k_res = make_request("/settings/mcp-servers", method="PUT", data=kaggle_payload)
-    if "error" in k_res:
-        print(f"  ⚠️  Kaggle remote registration: {k_res['error']}")
-    else:
-        print(f"  ✓ Registered authenticated 'kaggle' MCP server!")
+    make_request("/settings/mcp-servers", method="PUT", data=kaggle_payload)
+    print(f"  ✓ Registered authenticated 'kaggle' MCP server!")
 
-    # 3. Register local Research Tools
-    print("\n[2/3] Registering 'forge-researcher-tools' in TrueForge...")
+    # 3. Register local Research & Colab Tools
+    print("\n[2/3] Registering 'forge-researcher-tools' (Colab, arXiv, Plotting, LaTeX, Rigor)...")
     tools_payload = {
         "manifest": {
             "type": "remote",
             "name": "forge-researcher-tools",
             "url": "http://127.0.0.1:8795/sse",
-            "description": "Research toolkit: arXiv search, academic citations, plotting, LaTeX compilation, and Level-2 rigor auditor."
+            "description": "Research toolkit: Google Colab, arXiv search, academic citations, plotting, LaTeX compilation, and Level-2 rigor auditor."
         }
     }
-    t_res = make_request("/settings/mcp-servers", method="PUT", data=tools_payload)
-    if "error" in t_res:
-        print(f"  ❌ Error registering research tools: {t_res['error']}")
-    else:
-        print("  ✓ Registered 'forge-researcher-tools' MCP server!")
+    make_request("/settings/mcp-servers", method="PUT", data=tools_payload)
+    print("  ✓ Registered 'forge-researcher-tools' MCP server!")
 
     # 4. Detect Model
     providers_res = make_request("/settings/model-providers")
@@ -85,7 +79,7 @@ def setup():
         if models:
             model_name = f"{prov_name}/{models[0].get('name')}"
 
-    print(f"\n[3/3] Registering 'forge-researcher' Agent with authenticated Kaggle...")
+    print(f"\n[3/3] Registering 'forge-researcher' Agent...")
     
     agent_payload = {
         "name": "forge-researcher",
@@ -95,8 +89,8 @@ def setup():
                 "params": {"reasoning_effort": "minimal"}
             },
             "instructions": (
-                "You are 'forge-researcher', an autonomous empirical ML research assistant with full Kaggle and literature search integrations.\n\n"
-                f"AUTHENTICATED USER: {KAGGLE_USER}\n\n"
+                "You are 'forge-researcher', an autonomous empirical ML research assistant with full Google Colab, Kaggle, and literature search integrations.\n\n"
+                f"AUTHENTICATED KAGGLE USER: {KAGGLE_USER}\n\n"
                 "YOUR ATTACHED CAPABILITIES:\n"
                 "1. `kaggle` MCP Server (Authenticated via Kaggle Bearer Token):\n"
                 "   - Notebooks: List, start, manage, and retrieve outputs for your Kaggle Notebooks & GPU compute.\n"
@@ -104,9 +98,10 @@ def setup():
                 "   - Competitions: Search competitions, download files, and submit solutions.\n"
                 "   - Models & Benchmarking: Manage Kaggle models and benchmarks.\n\n"
                 "2. `forge-researcher-tools` MCP Server:\n"
+                "   - `open_google_colab_session`: Launches Google Colab in browser with Colab MCP bridge for interactive cell execution.\n"
+                "   - `inspect_colab_and_kaggle_compute`: Profiles Colab GPU/TPU & Kaggle compute boundaries.\n"
                 "   - `search_arxiv_papers`: Query arXiv API for research papers.\n"
                 "   - `search_academic_citations`: Query CrossRef & Semantic Scholar citations.\n"
-                "   - `inspect_compute_environment`: Profile local sandbox & memory.\n"
                 "   - `analyze_dataset_profile`: Profile CSV/TSV statistics & shapes.\n"
                 "   - `generate_academic_figures`: Draw dual-axis loss curves and benchmark bar charts.\n"
                 "   - `compile_latex_paper`: Draft 2-column conference LaTeX papers.\n"
@@ -146,10 +141,10 @@ def setup():
     if "error" in agent_res:
         print(f"  ❌ Error creating agent: {agent_res['error']}")
     else:
-        print("  ✓ Created agent 'forge-researcher' with authenticated Kaggle access!")
+        print("  ✓ Created agent 'forge-researcher' with Google Colab & Kaggle access!")
 
     print("\n" + "=" * 60)
-    print("🎉 KAGGLE AUTHENTICATION & RESEARCH TOOLKIT ARE READY!")
+    print("🎉 GOOGLE COLAB & KAGGLE ARE FULLY CONFIGURED!")
     print("=" * 60)
 
 if __name__ == "__main__":

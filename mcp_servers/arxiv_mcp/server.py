@@ -6,7 +6,7 @@ import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 import json
-from mcp.server.mcpserver import MCPServer
+from fastmcp import FastMCP as MCPServer
 
 mcp = MCPServer("ArXivServer")
 

@@ -16,7 +16,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 import matplotlib.pyplot as plt
 import pandas as pd
-from mcp.server.mcpserver import MCPServer
+from fastmcp import FastMCP as MCPServer
 
 mcp = MCPServer("ResearchLabServer")
 

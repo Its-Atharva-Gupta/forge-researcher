@@ -6,7 +6,7 @@ from typing import Dict, Any, List
 import os
 import re
 import pandas as pd
-from mcp.server.mcpserver import MCPServer
+from fastmcp import FastMCP as MCPServer
 
 mcp = MCPServer("LaTeXCompilerServer")
 

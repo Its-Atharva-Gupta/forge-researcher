@@ -1,47 +1,35 @@
 """
 Unified FastMCP SSE Gateway for ForgeResearcher
-Serves dedicated research tools over persistent SSE:
-- `search_kaggle_datasets`: Discovers Kaggle datasets and scientific benchmarks.
-- `execute_kaggle_kernel`: Runs experiment scripts on remote Kaggle cloud compute (GPU/TPU).
-- `get_kaggle_kernel_status`: Checks logs and status of running Kaggle kernels.
+Serves full research suite including Google Colab & Kaggle:
+- `open_google_colab_session`: Launches live Google Colab compute session in browser.
+- `inspect_colab_and_kaggle_compute`: Profiles Colab GPU/TPU & Kaggle compute boundaries.
 - `search_arxiv_papers`: Searches arXiv papers over HTTPS.
 - `search_academic_citations`: Searches CrossRef & Semantic Scholar citations.
-- `inspect_compute_environment`: Profiles local CPU sandbox and remote Kaggle dispatch.
 - `analyze_dataset_profile`: Profiles CSV/TSV stats and shapes.
 - `generate_academic_figures`: Dual-axis publication plotting engine.
 - `compile_latex_paper`: 2-column LaTeX conference manuscript compiler.
 - `verify_scientific_claims_audit`: Level-2 Scientific Rigor Fact-Checker.
 """
 from typing import Dict, Any, List, Optional
-from mcp.server.mcpserver import MCPServer
+from fastmcp import FastMCP
 
 from mcp_servers.arxiv_mcp.server import search_arxiv
 from mcp_servers.scholar_mcp.server import search_semantic_scholar
-from mcp_servers.kaggle_colab_mcp.server import search_kaggle_datasets, execute_kaggle_kernel, get_kaggle_kernel_status, inspect_compute_environment
+from mcp_servers.kaggle_colab_mcp.server import open_google_colab_session, inspect_colab_and_kaggle_compute
 from mcp_servers.latex_compiler_mcp.server import render_latex_manuscript, audit_scientific_claims
 from mcp_servers.research_lab_mcp.server import profile_dataset, generate_publication_plots
 
-mcp = MCPServer("forge-researcher-tools")
+mcp = FastMCP("forge-researcher-tools")
 
 @mcp.tool()
-def search_kaggle_datasets(query: str, max_results: int = 5) -> Dict[str, Any]:
-    """Search Kaggle, competition benchmarks, and open scientific datasets."""
-    return search_kaggle_datasets(query, max_results)
+def open_google_colab_session(notebook_title: Optional[str] = "ForgeResearcher_Experiment") -> Dict[str, Any]:
+    """Open Google Colab browser session with GPU/TPU compute and Colab MCP bridge."""
+    return open_google_colab_session(notebook_title)
 
 @mcp.tool()
-def execute_kaggle_kernel(
-    kernel_title: str,
-    code_content: str,
-    enable_gpu: bool = False,
-    dataset_sources: Optional[List[str]] = None
-) -> Dict[str, Any]:
-    """Execute Python ML experiment on Kaggle remote cloud compute (with GPU support)."""
-    return execute_kaggle_kernel(kernel_title, code_content, enable_gpu, dataset_sources)
-
-@mcp.tool()
-def get_kaggle_kernel_status(kernel_slug: str) -> Dict[str, Any]:
-    """Check execution status of a Kaggle remote kernel."""
-    return get_kaggle_kernel_status(kernel_slug)
+def inspect_colab_and_kaggle_compute() -> Dict[str, Any]:
+    """Profile remote Google Colab GPU/TPU and Kaggle cloud compute resources."""
+    return inspect_colab_and_kaggle_compute()
 
 @mcp.tool()
 def search_arxiv_papers(query: str, max_results: int = 5) -> Dict[str, Any]:
@@ -52,11 +40,6 @@ def search_arxiv_papers(query: str, max_results: int = 5) -> Dict[str, Any]:
 def search_academic_citations(query: str, limit: int = 5) -> Dict[str, Any]:
     """Search academic literature and citations via CrossRef and Semantic Scholar."""
     return search_semantic_scholar(query, limit)
-
-@mcp.tool()
-def inspect_compute_environment() -> Dict[str, Any]:
-    """Profile local sandbox and remote Kaggle cloud compute environment."""
-    return inspect_compute_environment()
 
 @mcp.tool()
 def analyze_dataset_profile(dataset_path: str) -> Dict[str, Any]:
