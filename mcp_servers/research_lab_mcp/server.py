@@ -1,16 +1,17 @@
 """
 Research Lab FastMCP Server
 Integrated research toolkit:
-- arXiv & Google Scholar literature search
+- arXiv literature search (over HTTPS)
 - Dataset profiling & validation
-- Dual-axis publication-quality plotting
-- LaTeX conference manuscript drafting
+- Publication-quality plotting with strict column validation
+- LaTeX conference manuscript drafting with character escaping
 - Level-2 Scientific Rigor & Fact-Check Auditor
 """
 from typing import Dict, Any, List, Optional
 import os
 import re
 import json
+import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 import matplotlib.pyplot as plt
@@ -19,14 +20,30 @@ from mcp.server.mcpserver import MCPServer
 
 mcp = MCPServer("ResearchLabServer")
 
-# --- 1. LITERATURE RETRIEVAL (ARXIV & SCHOLAR) ---
+def escape_latex(text: str) -> str:
+    """Escapes special LaTeX characters in metadata, titles, and captions."""
+    replacements = {
+        '&': r'\&',
+        '%': r'\%',
+        '$': r'\$',
+        '#': r'\#',
+        '_': r'\_',
+        '{': r'\{',
+        '}': r'\}',
+        '~': r'\textasciitilde{}',
+        '^': r'\textasciicircum{}',
+    }
+    pattern = re.compile("|".join(re.escape(k) for k in replacements.keys()))
+    return pattern.sub(lambda m: replacements[m.group(0)], text)
+
+# --- 1. LITERATURE RETRIEVAL (ARXIV OVER HTTPS) ---
 @mcp.tool()
 def search_arxiv_papers(query: str, max_results: int = 5) -> Dict[str, Any]:
     """
-    Queries the official arXiv API for recent papers, abstracts, authors, and arXiv IDs.
+    Queries the official arXiv API over HTTPS for recent papers, abstracts, authors, and arXiv IDs.
     """
     encoded_query = urllib.parse.quote(query)
-    url = f"http://export.arxiv.org/api/query?search_query=all:{encoded_query}&start=0&max_results={max_results}"
+    url = f"https://export.arxiv.org/api/query?search_query=all:{encoded_query}&start=0&max_results={max_results}"
     
     try:
         req = urllib.request.Request(url, headers={'User-Agent': 'ForgeResearcher/1.0'})
@@ -84,27 +101,32 @@ def profile_dataset(dataset_path: str) -> Dict[str, Any]:
 @mcp.tool()
 def generate_publication_plots(results_tsv_path: str, output_figure_dir: str) -> Dict[str, Any]:
     """
-    Reads results.tsv and generates two publication figures:
-    1. A loss/convergence optimization curve (`learning_curve.png`)
-    2. A benchmark comparison bar chart (`benchmark_comparison.png`)
+    Reads results.tsv and generates two publication figures.
+    Strictly validates required metric columns (val_loss, val_acc, iteration).
     """
     if not os.path.exists(results_tsv_path):
         return {"error": f"Results log {results_tsv_path} not found."}
     
     try:
         df = pd.read_csv(results_tsv_path, sep="\t")
+        if df.empty:
+            return {"error": "results.tsv is empty."}
+            
+        required_cols = ["iteration", "val_loss", "val_acc"]
+        missing = [col for col in required_cols if col not in df.columns]
+        if missing:
+            return {"error": f"results.tsv is missing required contract columns: {missing}"}
+            
         os.makedirs(output_figure_dir, exist_ok=True)
-        
         plt.style.use("seaborn-v0_8-whitegrid" if "seaborn-v0_8-whitegrid" in plt.style.available else "default")
         
         # Figure 1: Learning / Loss curve
         fig1, ax1 = plt.subplots(figsize=(6, 4), dpi=300)
-        if "val_loss" in df.columns:
-            ax1.plot(df["iteration"], df["val_loss"], marker="o", color="#2563eb", label="Validation Loss", lw=2)
-            ax1.set_xlabel("Experimental Iteration / Trial", fontsize=10)
-            ax1.set_ylabel("Cross-Entropy Loss", fontsize=10)
-            ax1.set_title("Empirical Loss Trajectory", fontsize=11, fontweight="bold")
-            ax1.legend()
+        ax1.plot(df["iteration"], df["val_loss"], marker="o", color="#2563eb", label="Validation Loss", lw=2)
+        ax1.set_xlabel("Experimental Iteration / Trial", fontsize=10)
+        ax1.set_ylabel("Cross-Entropy Loss", fontsize=10)
+        ax1.set_title("Empirical Loss Trajectory", fontsize=11, fontweight="bold")
+        ax1.legend()
         fig1_path = os.path.join(output_figure_dir, "learning_curve.png")
         fig1.tight_layout()
         fig1.savefig(fig1_path)
@@ -112,16 +134,16 @@ def generate_publication_plots(results_tsv_path: str, output_figure_dir: str) ->
         
         # Figure 2: Metric Comparison Bar Chart
         fig2, ax2 = plt.subplots(figsize=(6, 4), dpi=300)
-        if "val_acc" in df.columns:
-            labels = df["description"] if "description" in df.columns else [f"Trial {i}" for i in df["iteration"]]
-            short_labels = [l[:18] + '...' if len(l) > 18 else l for l in labels]
-            bars = ax2.bar(short_labels, df["val_acc"], color="#16a34a", width=0.5)
-            ax2.set_ylabel("Accuracy (%)", fontsize=10)
-            ax2.set_title("Benchmark Metric Comparison", fontsize=11, fontweight="bold")
-            ax2.set_ylim(min(df["val_acc"]) - 5, 100)
-            for bar in bars:
-                yval = bar.get_height()
-                ax2.text(bar.get_x() + bar.get_width()/2.0, yval + 0.5, f"{yval:.1f}%", ha='center', va='bottom', fontsize=8)
+        labels = df["description"] if "description" in df.columns else [f"Trial {i}" for i in df["iteration"]]
+        short_labels = [str(l)[:18] + '...' if len(str(l)) > 18 else str(l) for l in labels]
+        bars = ax2.bar(short_labels, df["val_acc"], color="#16a34a", width=0.5)
+        ax2.set_ylabel("Accuracy (%)", fontsize=10)
+        ax2.set_title("Benchmark Metric Comparison", fontsize=11, fontweight="bold")
+        ax2.set_ylim(max(0, min(df["val_acc"]) - 5), 100)
+        for bar in bars:
+            yval = bar.get_height()
+            ax2.text(bar.get_x() + bar.get_width()/2.0, yval + 0.5, f"{yval:.1f}%", ha='center', va='bottom', fontsize=8)
+            
         fig2_path = os.path.join(output_figure_dir, "benchmark_comparison.png")
         fig2.tight_layout()
         fig2.savefig(fig2_path)
@@ -146,6 +168,7 @@ def render_latex_manuscript(
 ) -> Dict[str, Any]:
     """
     Compiles a structured 2-column LaTeX conference paper draft embedding experimental figures.
+    Escapes special characters in titles, metadata, and captions.
     """
     try:
         tex = []
@@ -158,8 +181,11 @@ def render_latex_manuscript(
         tex.append(r"\geometry{margin=0.75in}")
         tex.append(r"\usepackage{hyperref}")
         
-        tex.append(f"\\title{{{title}}}")
-        tex.append(f"\\author{{{', '.join(authors)}}}")
+        escaped_title = escape_latex(title)
+        escaped_authors = [escape_latex(a) for a in authors]
+        
+        tex.append(f"\\title{{{escaped_title}}}")
+        tex.append(f"\\author{{{', '.join(escaped_authors)}}}")
         tex.append(r"\date{\today}")
         
         tex.append(r"\begin{document}")
@@ -170,16 +196,18 @@ def render_latex_manuscript(
         tex.append(r"\end{abstract}")
         
         for sec_title, sec_body in sections.items():
-            tex.append(f"\\section{{{sec_title}}}")
+            escaped_sec_title = escape_latex(sec_title)
+            tex.append(f"\\section{{{escaped_sec_title}}}")
             tex.append(sec_body)
             
             if "results" in sec_title.lower() or "experiment" in sec_title.lower():
                 for fig in figure_paths:
                     if os.path.exists(fig):
+                        safe_caption = escape_latex(f"Empirical evaluation artifact: {os.path.basename(fig)}")
                         tex.append(r"\begin{figure}[htbp]")
                         tex.append(r"\centering")
                         tex.append(f"\\includegraphics[width=\\linewidth]{{{fig}}}")
-                        tex.append(f"\\caption{{Empirical evaluation artifact: {os.path.basename(fig)}}}")
+                        tex.append(f"\\caption{{{safe_caption}}}")
                         tex.append(r"\end{figure}")
                         
         tex.append(r"\end{document}")
@@ -211,13 +239,11 @@ def audit_scientific_claims(paper_tex_path: str, results_tsv_path: str) -> Dict[
             
         df = pd.read_csv(results_tsv_path, sep="\t")
         
-        # Check if max accuracy in text matches dataframe max accuracy
         max_acc = df["val_acc"].max() if "val_acc" in df.columns else None
         min_loss = df["val_loss"].min() if "val_loss" in df.columns else None
         
         discrepancies = []
         
-        # Search for accuracy numbers in paper
         acc_mentions = re.findall(r'(\d+(?:\.\d+)?)\s*%', paper_text)
         if max_acc is not None:
             max_acc_str = f"{max_acc:.1f}"
