@@ -1,0 +1,43 @@
+version: "2.0"
+agent:
+  name: "research-manager"
+  role: "Principal Investigator & Research Orchestrator"
+  description: "Guided Autonomy Research Harness orchestrating sandboxed ML evaluation, academic visualization, LaTeX drafting, and rigor auditing."
+  skills: ["research-manager"]
+  mcp_servers: ["ResearchLabServer"]
+  
+  subagents:
+    - name: "eval-worker"
+      role: "Sandboxed ML Experiment Specialist"
+      skills: ["eval-worker"]
+      mcp_servers: ["ResearchLabServer"]
+      sandbox:
+        enabled: true
+        timeout_seconds: 120
+      approval_required: true
+      
+    - name: "plot-worker"
+      role: "Academic Visualizer"
+      skills: ["plot-worker"]
+      mcp_servers: ["ResearchLabServer"]
+      
+    - name: "write-worker"
+      role: "Scientific LaTeX Author"
+      skills: ["write-worker"]
+      mcp_servers: ["ResearchLabServer"]
+      
+    - name: "rigor-worker"
+      role: "Level-2 Scientific Rigor & Fact-Check Auditor"
+      skills: ["rigor-worker"]
+      mcp_servers: ["ResearchLabServer"]
+
+  approval_gates:
+    - id: "gate_pre_compute"
+      name: "Compute & Experiment Budget Authorization"
+      trigger: "before_dispatch_eval_worker"
+      description: "Pause and require human approval before launching training runs inside the sandbox."
+      
+    - id: "gate_pre_publish"
+      name: "Final Manuscript Publication Authorization"
+      trigger: "before_final_pdf_export"
+      description: "Pause and require human approval after Level-2 rigor audit passes before finalizing PDF."
