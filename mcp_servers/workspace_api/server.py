@@ -1,11 +1,12 @@
 """
 Workspace Explorer & Telemetry API for ForgeResearcher Studio UI
-Serves real-time files and Kaggle execution logs from the active workspace directory.
+Serves real-time files, images (Base64), and Kaggle execution logs from workspace/
 """
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import json
+import base64
 import uvicorn
 from kaggle.api.kaggle_api_extended import KaggleApi
 
@@ -34,24 +35,40 @@ def list_workspace_files():
             full_path = os.path.join(root, f)
             rel_path = os.path.relpath(full_path, start=".")
             size_kb = round(os.path.getsize(full_path) / 1024, 2)
+            is_image = f.lower().endswith(('.png', '.jpg', '.jpeg', '.svg', '.gif'))
             file_list.append({
                 "path": rel_path,
                 "name": f,
                 "size": f"{size_kb} KB",
+                "is_image": is_image,
                 "modified": os.path.getmtime(full_path)
             })
     return {"files": file_list, "total": len(file_list)}
 
 @app.get("/api/workspace/file")
 def read_workspace_file(path: str):
-    """Reads content of a specific file in workspace/."""
+    """Reads content of a specific file or returns image Base64 data."""
     safe_path = os.path.abspath(path)
     if not os.path.exists(safe_path):
         return {"error": "File not found"}
     
+    is_image = path.lower().endswith(('.png', '.jpg', '.jpeg', '.gif'))
+    if is_image:
+        try:
+            with open(safe_path, "rb") as f:
+                encoded = base64.b64encode(f.read()).decode("utf-8")
+                mime = "image/png" if path.endswith(".png") else "image/jpeg"
+                return {
+                    "path": path,
+                    "is_image": True,
+                    "content": f"data:{mime};base64,{encoded}"
+                }
+        except Exception as e:
+            return {"error": str(e)}
+    
     try:
         with open(safe_path, "r", errors="ignore") as f:
-            return {"path": path, "content": f.read()}
+            return {"path": path, "is_image": False, "content": f.read()}
     except Exception as e:
         return {"error": str(e)}
 
@@ -62,26 +79,10 @@ def get_latest_kaggle_logs():
         try:
             with open(CACHE_FILE, "r") as f:
                 data = json.load(f)
-            
-            # If status is not complete, try fetching latest output from Kaggle API
-            if data.get("status") != "complete" and data.get("kernel_slug"):
-                try:
-                    api = KaggleApi()
-                    api.authenticate()
-                    status = api.kernels_status(data["kernel_slug"])
-                    output = api.kernels_output(data["kernel_slug"])
-                    data["status"] = status.get("status")
-                    if output.get("log"):
-                        data["log"] = output.get("log")
-                    with open(CACHE_FILE, "w") as f:
-                        json.dump(data, f)
-                except Exception:
-                    pass
             return data
         except Exception:
             pass
 
-    # Fallback to querying API directly
     try:
         api = KaggleApi()
         api.authenticate()

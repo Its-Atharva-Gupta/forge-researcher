@@ -14,18 +14,18 @@ import {
   Terminal,
   RefreshCw,
   Cpu,
-  Inbox
+  Inbox,
+  Image as ImageIcon
 } from 'lucide-react';
 
 export default function App() {
   const [liveArtifact, setLiveArtifact] = useState('workspace');
   const [workspaceFiles, setWorkspaceFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [fileContent, setFileContent] = useState("");
+  const [fileData, setFileData] = useState({ is_image: false, content: "" });
   const [kaggleData, setKaggleData] = useState({ active: false, log: "", message: "Awaiting first GPU experiment dispatch..." });
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Fetch real workspace files from port 8796
   const fetchWorkspace = async () => {
     setIsRefreshing(true);
     try {
@@ -54,15 +54,18 @@ export default function App() {
     try {
       const res = await fetch(`http://localhost:8796/api/workspace/file?path=${encodeURIComponent(filePath)}`);
       const data = await res.json();
-      setFileContent(data.content || "Empty file");
+      setFileData({
+        is_image: data.is_image || false,
+        content: data.content || "Empty file"
+      });
     } catch (e) {
-      setFileContent("Error reading file.");
+      setFileData({ is_image: false, content: "Error reading file." });
     }
   };
 
   useEffect(() => {
     fetchWorkspace();
-    const interval = setInterval(fetchWorkspace, 4000);
+    const interval = setInterval(fetchWorkspace, 3000);
     return () => clearInterval(interval);
   }, []);
 
@@ -187,27 +190,27 @@ export default function App() {
         </main>
 
         {/* 📊 Right Panel: Real-Time Live Workspace Explorer & GPU Stream */}
-        <aside style={{ width: '440px', borderLeft: '1px solid rgba(255,255,255,0.08)', backgroundColor: 'rgba(15,17,26,0.85)', display: 'flex', flexDirection: 'column' }}>
+        <aside style={{ width: '460px', borderLeft: '1px solid rgba(255,255,255,0.08)', backgroundColor: 'rgba(15,17,26,0.85)', display: 'flex', flexDirection: 'column' }}>
           
           {/* Tab Navigation */}
           <div style={{ height: '48px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-around', padding: '0 8px', backgroundColor: '#0c0e17' }}>
             <button 
               onClick={() => setLiveArtifact('workspace')} 
-              style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: liveArtifact === 'workspace' ? '#7c3aed' : 'transparent', color: liveArtifact === 'workspace' ? '#fff' : '#94a3b8', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+              style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', backgroundColor: liveArtifact === 'workspace' ? '#7c3aed' : 'transparent', color: liveArtifact === 'workspace' ? '#fff' : '#94a3b8', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
             >
               <FolderTree style={{ height: '13px', width: '13px' }} />
-              <span>Live Workspace ({workspaceFiles.length})</span>
+              <span>Workspace Files ({workspaceFiles.length})</span>
             </button>
             <button 
               onClick={() => setLiveArtifact('logs')} 
-              style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: liveArtifact === 'logs' ? '#7c3aed' : 'transparent', color: liveArtifact === 'logs' ? '#fff' : '#94a3b8', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+              style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', backgroundColor: liveArtifact === 'logs' ? '#7c3aed' : 'transparent', color: liveArtifact === 'logs' ? '#fff' : '#94a3b8', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
             >
               <Terminal style={{ height: '13px', width: '13px' }} />
               <span>Kaggle GPU Logs</span>
             </button>
           </div>
 
-          {/* Real-time Workspace View */}
+          {/* Real-time Workspace View with Image Preview Support */}
           {liveArtifact === 'workspace' && (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', backgroundColor: '#10131f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -236,7 +239,7 @@ export default function App() {
               ) : (
                 <>
                   {/* File List */}
-                  <div style={{ height: '150px', overflowY: 'auto', borderBottom: '1px solid rgba(255,255,255,0.08)', backgroundColor: '#0c0e17' }}>
+                  <div style={{ height: '140px', overflowY: 'auto', borderBottom: '1px solid rgba(255,255,255,0.08)', backgroundColor: '#0c0e17' }}>
                     {workspaceFiles.map((file, i) => (
                       <div 
                         key={i} 
@@ -252,7 +255,11 @@ export default function App() {
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <FileText style={{ height: '13px', width: '13px', color: selectedFile === file.path ? '#a78bfa' : '#64748b' }} />
+                          {file.is_image ? (
+                            <ImageIcon style={{ height: '13px', width: '13px', color: '#34d399' }} />
+                          ) : (
+                            <FileText style={{ height: '13px', width: '13px', color: selectedFile === file.path ? '#a78bfa' : '#64748b' }} />
+                          )}
                           <span style={{ fontSize: '11px', fontFamily: 'monospace', color: selectedFile === file.path ? '#fff' : '#cbd5e1' }}>{file.path}</span>
                         </div>
                         <span style={{ fontSize: '10px', fontFamily: 'monospace', color: '#64748b' }}>{file.size}</span>
@@ -260,12 +267,28 @@ export default function App() {
                     ))}
                   </div>
 
-                  {/* File Content Preview */}
-                  <div style={{ flex: 1, padding: '12px', overflowY: 'auto', backgroundColor: '#090b12', fontFamily: "'Fira Code', monospace", fontSize: '11px', color: '#cbd5e1', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>
+                  {/* File / Image Content Preview */}
+                  <div style={{ flex: 1, padding: '14px', overflowY: 'auto', backgroundColor: '#090b12', display: 'flex', flexDirection: 'column' }}>
                     <div style={{ fontSize: '10px', fontFamily: 'sans-serif', color: '#64748b', marginBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '4px' }}>
                       Viewing: <b>{selectedFile}</b>
                     </div>
-                    {fileContent}
+
+                    {fileData.is_image ? (
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '10px', backgroundColor: '#06070a', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                        <img 
+                          src={fileData.content} 
+                          alt={selectedFile} 
+                          style={{ maxWidth: '100%', maxHeight: '280px', borderRadius: '6px', objectFit: 'contain', boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }} 
+                        />
+                        <span style={{ fontSize: '10px', fontFamily: 'monospace', color: '#34d399', marginTop: '8px' }}>
+                          Generated Academic Figure
+                        </span>
+                      </div>
+                    ) : (
+                      <div style={{ fontFamily: "'Fira Code', monospace", fontSize: '11px', color: '#cbd5e1', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>
+                        {fileData.content}
+                      </div>
+                    )}
                   </div>
                 </>
               )}
