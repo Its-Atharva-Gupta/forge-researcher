@@ -1,0 +1,2 @@
+iteration	description	val_loss	val_acc	val_f1	val_auc	status
+0	Baseline RandomForest (n_est=50, depth=6)	0.3842	85.20	0.8411	0.9184	KEPT
