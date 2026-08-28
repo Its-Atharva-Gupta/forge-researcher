@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# ForgeResearcher 🔬⚡ — 1-Command Automated Setup & Launcher
+# ForgeResearcher 🔬⚡ — 1-Command Automated Setup & Guided Wizard
 # ==============================================================================
 set -e
 
@@ -11,16 +11,20 @@ echo "=================================================================="
 echo "🔬 Welcome to ForgeResearcher Studio (Best UI & Guided Autonomy)"
 echo "=================================================================="
 
-# Step 1: Ensure uv is installed
+# ------------------------------------------------------------------------------
+# STEP 1: Ensure uv Package Manager
+# ------------------------------------------------------------------------------
 if ! command -v uv &> /dev/null; then
-    echo "📦 [1/7] Installing uv package manager..."
+    echo "📦 [1/8] Installing uv package manager..."
     curl -LsSf https://astral.sh/uv/install.sh | sh
     export PATH="$HOME/.cargo/bin:$PATH"
 fi
 
-# Step 2: Set up virtual environment
+# ------------------------------------------------------------------------------
+# STEP 2: Python Environment Setup
+# ------------------------------------------------------------------------------
 if [ ! -d ".venv" ]; then
-    echo "⚙️  [2/7] Setting up Python virtual environment with uv..."
+    echo "⚙️  [2/8] Setting up Python virtual environment with uv..."
     uv venv .venv
     source .venv/bin/activate
     uv pip install pytest fastmcp uvicorn starlette fastapi pydantic pandas matplotlib scikit-learn numpy kaggle huggingface_hub datasets
@@ -28,8 +32,10 @@ else
     source .venv/bin/activate
 fi
 
-# Step 3: Install & Build Studio UI Frontend Dependencies
-echo "🎨 [3/7] Setting up ForgeResearcher Studio UI Frontend..."
+# ------------------------------------------------------------------------------
+# STEP 3: Frontend Studio UI Dependencies & Build
+# ------------------------------------------------------------------------------
+echo "🎨 [3/8] Setting up ForgeResearcher Studio UI Frontend..."
 cd "$DIR/frontend"
 if [ ! -d "node_modules" ]; then
     echo "  📦 Installing frontend dependencies (npm install)..."
@@ -39,18 +45,56 @@ echo "  ⚡ Building production bundle (npm run build)..."
 npm run build --silent || true
 cd "$DIR"
 
-# Step 4: Check for Kaggle Credentials
-echo "🔑 [4/7] Checking Kaggle Authentication..."
+# ------------------------------------------------------------------------------
+# STEP 4: Interactive Auth & Configuration Guide (Model Providers, Daytona, Kaggle)
+# ------------------------------------------------------------------------------
+echo ""
+echo "=================================================================="
+echo "🔑 [4/8] ENVIRONMENT & AUTHENTICATION CHECK"
+echo "=================================================================="
+
+# 1. Model Provider Check (OpenAI / Anthropic / DeepSeek / Ollama / OpenRouter)
+if [ -n "$OPENAI_API_KEY" ] || [ -n "$ANTHROPIC_API_KEY" ] || [ -n "$DEEPSEEK_API_KEY" ] || [ -n "$OPENROUTER_API_KEY" ]; then
+    echo "  ✓ Model Provider API Key detected."
+else
+    echo "  ⚠️  MODEL PROVIDER SETUP:"
+    echo "     TrueForge requires an LLM provider to power the agent."
+    echo "     Export your key in your terminal or .env:"
+    echo "       • export DEEPSEEK_API_KEY=\"your_key\""
+    echo "       • export OPENAI_API_KEY=\"your_key\""
+    echo "       • export ANTHROPIC_API_KEY=\"your_key\""
+    echo "       • Or configure providers inside TrueForge UI: http://localhost:8790/settings"
+fi
+
+# 2. Daytona Cloud Sandbox Workspace Check (Optional/Recommended for TrueForge)
+if [ -n "$DAYTONA_API_KEY" ] || [ -n "$DAYTONA_SERVER_URL" ] || command -v daytona &> /dev/null; then
+    echo "  ✓ Daytona workspace runtime detected (Isolated Cloud Sandbox active)."
+else
+    echo "  ℹ️  DAYTONA CLOUD WORKSPACE (Optional):"
+    echo "     For isolated cloud sandbox environments in TrueForge:"
+    echo "     1. Sign up at https://daytona.io and generate an API key."
+    echo "     2. Run: export DAYTONA_API_KEY=\"your_daytona_key\""
+    echo "     (Local TrueForge container sandbox will be used as fallback)"
+fi
+
+# 3. Kaggle Cloud GPU Authentication Check
 if [ -f "$HOME/.kaggle/kaggle.json" ] || [ -n "$KAGGLE_KEY" ]; then
     echo "  ✓ Kaggle credentials found (Cloud GPU acceleration active)."
 else
-    echo "  ℹ️  Optional: To enable Kaggle Cloud GPU execution, set up your Kaggle API key:"
+    echo "  ℹ️  KAGGLE CLOUD GPU SETUP (Dual-T4 / Tesla P100):"
+    echo "     To enable free Kaggle Cloud GPU execution:"
     echo "     1. Go to https://www.kaggle.com/settings -> Click 'Create New Token'"
-    echo "     2. Place kaggle.json in ~/.kaggle/kaggle.json (or run: export KAGGLE_KEY=...)"
+    echo "     2. Place the downloaded 'kaggle.json' in ~/.kaggle/kaggle.json"
+    echo "        (or run: export KAGGLE_USERNAME=... and export KAGGLE_KEY=...)"
+    echo "        (or run: chmod 600 ~/.kaggle/kaggle.json)"
 fi
+echo "=================================================================="
+echo ""
 
-# Step 5: Ensure TrueForge is running
-echo "🌐 [5/7] Checking TrueForge runtime on port 8790..."
+# ------------------------------------------------------------------------------
+# STEP 5: TrueForge Engine Runtime Launch
+# ------------------------------------------------------------------------------
+echo "🌐 [5/8] Checking TrueForge runtime on port 8790..."
 if ! curl -s http://localhost:8790/api/v1/settings/mcp-servers > /dev/null 2>&1; then
     echo "  🚀 Starting TrueForge runtime (npx @truefoundry/trueforge)..."
     nohup npx @truefoundry/trueforge > /tmp/trueforge.log 2>&1 &
@@ -67,19 +111,26 @@ else
     echo "  ✓ TrueForge is already running on http://localhost:8790."
 fi
 
-# Step 6: Start FastMCP Gateway
-echo "⚡ [6/7] Starting FastMCP Research Tool Gateway on port 8795..."
+# ------------------------------------------------------------------------------
+# STEP 6: FastMCP Gateway Launch
+# ------------------------------------------------------------------------------
+echo "⚡ [6/8] Starting FastMCP Research Tool Gateway on port 8795..."
 fuser -k 8795/tcp > /dev/null 2>&1 || true
 sleep 1
 nohup "$DIR/.venv/bin/python" "$DIR/run_mcp_gateway.py" > /tmp/mcp_gateway.log 2>&1 &
 MCP_PID=$!
 sleep 2
 
-# Register Agent & MCP Servers in TrueForge
+# ------------------------------------------------------------------------------
+# STEP 7: Register Agent & MCP Servers in TrueForge
+# ------------------------------------------------------------------------------
+echo "🤖 [7/8] Registering 'forge-researcher' with TrueForge..."
 "$DIR/.venv/bin/python" "$DIR/register_with_trueforge.py"
 
-# Step 7: Start Telemetry API & Launch Studio UI
-echo "🚀 [7/7] Starting Telemetry API & Launching Studio UI..."
+# ------------------------------------------------------------------------------
+# STEP 8: Start Telemetry API & Launch Studio UI
+# ------------------------------------------------------------------------------
+echo "🚀 [8/8] Starting Telemetry API & Launching Studio UI..."
 fuser -k 8796/tcp > /dev/null 2>&1 || true
 nohup "$DIR/.venv/bin/python" "$DIR/mcp_servers/workspace_api/server.py" > /tmp/workspace_api.log 2>&1 &
 
