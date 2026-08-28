@@ -1,5 +1,8 @@
 """
-Auto-Register ForgeResearcher with Kaggle Cloud Execution Tools
+Auto-Register ForgeResearcher with Official Kaggle MCP Endpoint & Research Tools
+Registers:
+1. `kaggle` (Official Remote MCP endpoint: https://www.kaggle.com/mcp)
+2. `forge-researcher-tools` (Local FastMCP SSE suite for arXiv, LaTeX, plotting, and rigor audit)
 """
 import os
 import json
@@ -25,21 +28,48 @@ def make_request(endpoint, method="GET", data=None):
 
 def setup():
     print("=" * 60)
-    print("⚡ UPDATING TRUEFORGE AGENT WITH KAGGLE CLOUD KERNEL EXECUTION")
+    print("⚡ CONNECTING OFFICIAL KAGGLE MCP SERVER & RESEARCH TOOLKIT")
     print("=" * 60)
 
-    # 1. Register server
-    mcp_payload = {
+    # 1. Connect
+    mcp_check = make_request("/settings/mcp-servers")
+    if "error" in mcp_check:
+        print(f"  ❌ Cannot connect to TrueForge: {mcp_check['error']}")
+        return False
+
+    # 2. Register Official Remote Kaggle MCP Server (https://www.kaggle.com/mcp)
+    print("\n[1/3] Registering official remote Kaggle MCP server (https://www.kaggle.com/mcp)...")
+    kaggle_payload = {
+        "manifest": {
+            "type": "remote",
+            "name": "kaggle",
+            "url": "https://www.kaggle.com/mcp",
+            "description": "Official Kaggle MCP Server: Search & download datasets, run & manage notebooks/kernels, enter competitions, and create model benchmarks."
+        }
+    }
+    k_res = make_request("/settings/mcp-servers", method="PUT", data=kaggle_payload)
+    if "error" in k_res:
+        print(f"  ⚠️  Kaggle remote register response: {k_res['error']}")
+    else:
+        print("  ✓ Registered official 'kaggle' MCP server (https://www.kaggle.com/mcp)!")
+
+    # 3. Register local Research Tools (arXiv, plotting, LaTeX, rigor audit)
+    print("\n[2/3] Registering 'forge-researcher-tools' in TrueForge...")
+    tools_payload = {
         "manifest": {
             "type": "remote",
             "name": "forge-researcher-tools",
             "url": "http://127.0.0.1:8795/sse",
-            "description": "Unified research tools: Kaggle search & cloud kernel execution, arXiv papers, Scholar citations, Plotting, LaTeX compiler, and Level-2 rigor auditor."
+            "description": "Research toolkit: arXiv search, academic citations, plotting, LaTeX compilation, and Level-2 rigor auditor."
         }
     }
-    make_request("/settings/mcp-servers", method="PUT", data=mcp_payload)
+    t_res = make_request("/settings/mcp-servers", method="PUT", data=tools_payload)
+    if "error" in t_res:
+        print(f"  ❌ Error registering research tools: {t_res['error']}")
+    else:
+        print("  ✓ Registered 'forge-researcher-tools' MCP server!")
 
-    # 2. Detect Model
+    # 4. Detect Model
     providers_res = make_request("/settings/model-providers")
     model_name = "deepseek/deepseek"
     if "data" in providers_res and len(providers_res["data"]) > 0:
@@ -49,7 +79,7 @@ def setup():
         if models:
             model_name = f"{prov_name}/{models[0].get('name')}"
 
-    print(f"\nRegistering 'forge-researcher' Agent...")
+    print(f"\n[3/3] Registering 'forge-researcher' Agent with official Kaggle & Research tools...")
     
     agent_payload = {
         "name": "forge-researcher",
@@ -59,22 +89,24 @@ def setup():
                 "params": {"reasoning_effort": "minimal"}
             },
             "instructions": (
-                "You are 'forge-researcher', an autonomous empirical ML research assistant with local and remote cloud execution tools.\n\n"
-                "YOUR ATTACHED RESEARCH TOOLS:\n"
-                "- `search_kaggle_datasets`: Call this to discover Kaggle datasets, competitions, and scientific benchmarks.\n"
-                "- `execute_kaggle_kernel`: Call this to push and run experiment code on Kaggle's remote cloud compute (with GPU/TPU support).\n"
-                "- `get_kaggle_kernel_status`: Call this to check the execution status of a remote Kaggle kernel.\n"
-                "- `search_arxiv_papers`: Call this when searching for academic papers on arXiv.\n"
-                "- `search_academic_citations`: Call this for Google Scholar / CrossRef citations.\n"
-                "- `inspect_compute_environment`: Call this to inspect CPU/RAM and compute boundaries.\n"
-                "- `analyze_dataset_profile`: Call this to profile dataset statistics and shapes.\n"
-                "- `generate_academic_figures`: Call this to plot loss curves and bar charts.\n"
-                "- `compile_latex_paper`: Call this to draft 2-column LaTeX conference papers.\n"
-                "- `verify_scientific_claims_audit`: Call this to perform Level-2 fact-checking.\n\n"
-                "WHEN ASKED ABOUT KAGGLE COMPUTE OR NOTEBOOKS:\n"
-                "You CAN run experiments on Kaggle compute using `execute_kaggle_kernel` (which pushes and runs scripts/notebooks via the Kaggle Kernels API) or inside TrueForge's isolated container sandbox."
+                "You are 'forge-researcher', an autonomous empirical ML research assistant.\n\n"
+                "YOUR ATTACHED CAPABILITIES:\n"
+                "1. `kaggle` MCP Server (https://www.kaggle.com/mcp):\n"
+                "   - Notebooks: Start, manage, and retrieve outputs for Kaggle Notebooks & GPU/TPU compute.\n"
+                "   - Datasets: Search, list files, and inspect metadata.\n"
+                "   - Competitions: Search competitions, download files, and submit solutions.\n"
+                "   - Models & Benchmarking: Manage Kaggle models and benchmarks.\n\n"
+                "2. `forge-researcher-tools` MCP Server:\n"
+                "   - `search_arxiv_papers`: Query arXiv API for research papers.\n"
+                "   - `search_academic_citations`: Query CrossRef & Semantic Scholar citations.\n"
+                "   - `inspect_compute_environment`: Profile local sandbox & memory.\n"
+                "   - `analyze_dataset_profile`: Profile CSV/TSV statistics & shapes.\n"
+                "   - `generate_academic_figures`: Draw dual-axis loss curves and benchmark bar charts.\n"
+                "   - `compile_latex_paper`: Draft 2-column conference LaTeX papers.\n"
+                "   - `verify_scientific_claims_audit`: Perform Level-2 empirical fact-checking."
             ),
             "mcp_servers": [
+                {"name": "kaggle", "enable_tools": ["@all"], "preload": False},
                 {"name": "forge-researcher-tools", "enable_tools": ["@all"], "preload": True}
             ],
             "config": {
@@ -107,10 +139,10 @@ def setup():
     if "error" in agent_res:
         print(f"  ❌ Error creating agent: {agent_res['error']}")
     else:
-        print("  ✓ Created agent 'forge-researcher' with Kaggle Cloud Kernel Execution!")
+        print("  ✓ Created agent 'forge-researcher' with official Kaggle MCP integration!")
 
     print("\n" + "=" * 60)
-    print("🎉 KAGGLE CLOUD KERNEL EXECUTION IS LIVE!")
+    print("🎉 OFFICIAL KAGGLE MCP SERVER & RESEARCH TOOLKIT ARE READY!")
     print("=" * 60)
 
 if __name__ == "__main__":
