@@ -1,5 +1,5 @@
 """
-Auto-Register ForgeResearcher with Kaggle Cloud GPU & Research Tools
+Auto-Register ForgeResearcher with Kaggle Cloud GPU, Workspace Tools & Research Suite
 """
 import os
 import json
@@ -10,7 +10,6 @@ TRUEFORGE_API = "http://localhost:8790/api/v1"
 REPO_DIR = os.path.abspath(os.path.dirname(__file__))
 WORKSPACE_DIR = os.path.join(REPO_DIR, "workspace")
 
-# Automatically read Kaggle credentials from ~/.kaggle/kaggle.json or environment
 KAGGLE_USER = os.environ.get("KAGGLE_USERNAME")
 KAGGLE_TOKEN = os.environ.get("KAGGLE_KEY")
 
@@ -45,14 +44,12 @@ def setup():
     print("⚡ AUTO-CONFIGURING TRUEFORGE HARNESS FOR FORGERESEARCHER")
     print("=" * 65)
 
-    # 1. Connect
     mcp_check = make_request("/settings/mcp-servers")
     if "error" in mcp_check:
         print(f"  ❌ Cannot connect to TrueForge at http://localhost:8790: {mcp_check['error']}")
         return False
     print("  ✓ Connected to TrueForge runtime.")
 
-    # 2. Register Authenticated Remote Kaggle MCP Server (if credentials present)
     if KAGGLE_TOKEN:
         print(f"  ✓ Kaggle credentials detected for user: {KAGGLE_USER or 'authenticated'}")
         kaggle_payload = {
@@ -70,22 +67,18 @@ def setup():
             }
         }
         make_request("/settings/mcp-servers", method="PUT", data=kaggle_payload)
-    else:
-        print("  ℹ️  No Kaggle credentials found (running in local sandbox mode).")
 
-    # 3. Register local FastMCP Tool Gateway (Kaggle Cloud GPU Dispatcher + Research Suite)
     tools_payload = {
         "manifest": {
             "type": "remote",
             "name": "forge-researcher-tools",
             "url": "http://127.0.0.1:8795/sse",
-            "description": "Kaggle GPU Dispatcher (NVIDIA T4 Dual-GPU), Hugging Face Hub, arXiv, Plotting, LaTeX compiler, and Level-2 rigor auditor."
+            "description": "Kaggle GPU Dispatcher, Workspace File Manager, Hugging Face Hub, arXiv, Plotting, LaTeX compiler, and Rigor Auditor."
         }
     }
     make_request("/settings/mcp-servers", method="PUT", data=tools_payload)
     print("  ✓ Registered 'forge-researcher-tools' FastMCP server.")
 
-    # 4. Detect Model
     providers_res = make_request("/settings/model-providers")
     model_name = "deepseek/deepseek"
     if "data" in providers_res and len(providers_res["data"]) > 0:
@@ -100,14 +93,12 @@ def setup():
     
     agent_instructions = (
         "You are 'forge-researcher', an autonomous empirical ML research harness operating under GUIDED AUTONOMY.\n\n"
-        f"## CRITICAL WORKSPACE DIRECTORY:\n"
-        f"ALWAYS write and read your project code, datasets, evaluation tables, and figures inside the project's absolute workspace directory: `{WORKSPACE_DIR}` (or `./workspace/`).\n"
-        f"- Save all experiment scripts as `{WORKSPACE_DIR}/<experiment_name>.py`\n"
-        f"- Save all metrics and loss steps to `{WORKSPACE_DIR}/results.tsv`\n"
-        f"- Save all plots to `{WORKSPACE_DIR}/figures/`\n"
-        f"- Save paper manuscripts to `{WORKSPACE_DIR}/paper.tex`\n"
-        f"Do NOT write to isolated temporary directories without copying files to `{WORKSPACE_DIR}` so the user and UI can access them.\n\n"
+        "## MANDATORY FILE PERSISTENCE RULE:\n"
+        "Whenever you generate, create, or modify ANY file (e.g. experiment scripts, notes, text files, dataset CSVs, results.tsv, paper.tex), "
+        "you MUST call the `write_workspace_file` tool provided in `forge-researcher-tools` with the filename and content. "
+        "This persists the file directly into the project's host workspace and makes it instantly visible and editable in the user's Studio UI.\n\n"
         "## CLOUD & LOCAL COMPUTE TOOLS:\n"
+        "- `write_workspace_file`: Directly saves any code or document to `workspace/<filename>` so it displays in the studio directory.\n"
         "- `run_experiment_on_kaggle_gpu`: Dispatches training scripts directly to Kaggle's remote cloud NVIDIA T4 Dual-GPUs / TPUs.\n"
         "- `get_kaggle_experiment_logs`: Fetches execution logs, loss curves, and artifact files from running GPU kernels.\n"
         "- `inspect_kaggle_and_local_compute`: Checks your compute hardware specs and quotas.\n\n"
@@ -116,10 +107,10 @@ def setup():
         "- Hugging Face Hub: `search_huggingface_models`, `search_huggingface_datasets`, `search_huggingface_spaces`.\n"
         "- Literature: `search_arxiv` (arXiv HTTPS query) and `search_semantic_scholar` (CrossRef citation index).\n"
         "- Lab & Paper: `profile_dataset`, `generate_publication_plots`, `render_latex_manuscript`, and `audit_scientific_claims`.\n\n"
-        "## GUIDED AUTONOMY SUBAGENTS (Orchestrated via `delegate_subagent_task` or `create_sub_agent`):\n"
-        "- `eval-worker`: Dispatches experiments to Kaggle Cloud GPU via `run_experiment_on_kaggle_gpu` or executes in local sandbox (emits `results.tsv`).\n"
-        "- `plot-worker`: Publication plotting (emits `figures/`).\n"
-        "- `write-worker`: LaTeX paper synthesis (emits `paper.tex`).\n"
+        "## GUIDED AUTONOMY SUBAGENTS:\n"
+        "- `eval-worker`: Dispatches experiments to Kaggle Cloud GPU or writes local scripts via `write_workspace_file` (emits `results.tsv`).\n"
+        "- `plot-worker`: Publication plotting via `generate_publication_plots` (emits `figures/`).\n"
+        "- `write-worker`: LaTeX paper synthesis via `render_latex_manuscript` (emits `paper.tex`).\n"
         "- `rigor-worker`: Level-2 empirical fact-checker (emits `rigor_audit.json`).\n\n"
         "## APPROVAL GATES:\n"
         "- APPROVAL GATE #1: Formulate 3-trial hypothesis matrix & compute budget, then pause for user approval before compute execution.\n"

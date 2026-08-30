@@ -6,6 +6,7 @@ from fastmcp import FastMCP
 from mcp_servers.arxiv_mcp.server import search_arxiv
 from mcp_servers.scholar_mcp.server import search_semantic_scholar
 from mcp_servers.research_lab_mcp.server import (
+    write_workspace_file,
     profile_dataset,
     generate_publication_plots
 )
@@ -31,8 +32,11 @@ from mcp_servers.subagent_telemetry.server import (
 
 gateway = FastMCP(
     "forge-researcher-tools",
-    instructions="Unified Autonomous Research MCP Suite for literature discovery, HF Hub search, Kaggle Cloud GPUs, plotting, LaTeX generation, and subagent hierarchy delegation."
+    instructions="Unified Autonomous Research MCP Suite for literature discovery, HF Hub search, Kaggle Cloud GPUs, plotting, LaTeX generation, workspace file management, and subagent hierarchy delegation."
 )
+
+# Workspace File Management Tool
+gateway.tool(name="write_workspace_file", description="Writes scripts, data files, tables, or notes directly to the project's workspace/ folder.")(write_workspace_file)
 
 # Subagent Hierarchy Delegation & Tracking Tools
 gateway.tool(name="delegate_subagent_task", description="Delegates a bounded research sub-task to a specialized subagent (eval-worker, plot-worker, write-worker, rigor-worker) with an explicit prompt and contract.")(delegate_subagent_task)
