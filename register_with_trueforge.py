@@ -7,6 +7,8 @@ import urllib.request
 import urllib.error
 
 TRUEFORGE_API = "http://localhost:8790/api/v1"
+REPO_DIR = os.path.abspath(os.path.dirname(__file__))
+WORKSPACE_DIR = os.path.join(REPO_DIR, "workspace")
 
 # Automatically read Kaggle credentials from ~/.kaggle/kaggle.json or environment
 KAGGLE_USER = os.environ.get("KAGGLE_USERNAME")
@@ -98,6 +100,13 @@ def setup():
     
     agent_instructions = (
         "You are 'forge-researcher', an autonomous empirical ML research harness operating under GUIDED AUTONOMY.\n\n"
+        f"## CRITICAL WORKSPACE DIRECTORY:\n"
+        f"ALWAYS write and read your project code, datasets, evaluation tables, and figures inside the project's absolute workspace directory: `{WORKSPACE_DIR}` (or `./workspace/`).\n"
+        f"- Save all experiment scripts as `{WORKSPACE_DIR}/<experiment_name>.py`\n"
+        f"- Save all metrics and loss steps to `{WORKSPACE_DIR}/results.tsv`\n"
+        f"- Save all plots to `{WORKSPACE_DIR}/figures/`\n"
+        f"- Save paper manuscripts to `{WORKSPACE_DIR}/paper.tex`\n"
+        f"Do NOT write to isolated temporary directories without copying files to `{WORKSPACE_DIR}` so the user and UI can access them.\n\n"
         "## CLOUD & LOCAL COMPUTE TOOLS:\n"
         "- `run_experiment_on_kaggle_gpu`: Dispatches training scripts directly to Kaggle's remote cloud NVIDIA T4 Dual-GPUs / TPUs.\n"
         "- `get_kaggle_experiment_logs`: Fetches execution logs, loss curves, and artifact files from running GPU kernels.\n"
@@ -107,7 +116,7 @@ def setup():
         "- Hugging Face Hub: `search_huggingface_models`, `search_huggingface_datasets`, `search_huggingface_spaces`.\n"
         "- Literature: `search_arxiv` (arXiv HTTPS query) and `search_semantic_scholar` (CrossRef citation index).\n"
         "- Lab & Paper: `profile_dataset`, `generate_publication_plots`, `render_latex_manuscript`, and `audit_scientific_claims`.\n\n"
-        "## GUIDED AUTONOMY SUBAGENTS (Orchestrated via `create_sub_agent`):\n"
+        "## GUIDED AUTONOMY SUBAGENTS (Orchestrated via `delegate_subagent_task` or `create_sub_agent`):\n"
         "- `eval-worker`: Dispatches experiments to Kaggle Cloud GPU via `run_experiment_on_kaggle_gpu` or executes in local sandbox (emits `results.tsv`).\n"
         "- `plot-worker`: Publication plotting (emits `figures/`).\n"
         "- `write-worker`: LaTeX paper synthesis (emits `paper.tex`).\n"

@@ -5,10 +5,14 @@ Exposes all ML Research, Literature, Dataset, SOTA Compute, and Subagent Delegat
 from fastmcp import FastMCP
 from mcp_servers.arxiv_mcp.server import search_arxiv
 from mcp_servers.scholar_mcp.server import search_semantic_scholar
-from mcp_servers.data_mcp.server import profile_dataset
-from mcp_servers.plot_mcp.server import generate_publication_plots
-from mcp_servers.latex_mcp.server import render_latex_manuscript
-from mcp_servers.eval_mcp.server import audit_scientific_claims
+from mcp_servers.research_lab_mcp.server import (
+    profile_dataset,
+    generate_publication_plots
+)
+from mcp_servers.latex_compiler_mcp.server import (
+    render_latex_manuscript,
+    audit_scientific_claims
+)
 from mcp_servers.kaggle_mcp.server import (
     search_kaggle_datasets, 
     run_experiment_on_kaggle_gpu, 
